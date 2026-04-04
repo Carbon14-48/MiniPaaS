@@ -1,0 +1,21 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push Docker images
+        run: |
+          for service in api-gateway auth-service app-management build-service deployment-service monitoring-service security-scanner; do
+            docker build -t cloudoku/$service:${{ github.sha }} services/$service/
+          done
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -k infra/kubernetes/overlays/dev/

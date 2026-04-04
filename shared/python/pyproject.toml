@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudoku-common"
+version = "0.1.0"
+description = "Shared utilities for Cloudoku microservices"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyjwt>=2.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["cloudoku_common*"]

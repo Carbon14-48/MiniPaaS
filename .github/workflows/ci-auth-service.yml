@@ -1,0 +1,23 @@
+name: CI - Auth Service
+
+on:
+  push:
+    paths:
+      - "services/auth-service/**"
+  pull_request:
+    paths:
+      - "services/auth-service/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/auth-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -v

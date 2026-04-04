@@ -1,0 +1,23 @@
+name: CI - Deployment Service
+
+on:
+  push:
+    paths:
+      - "services/deployment-service/**"
+  pull_request:
+    paths:
+      - "services/deployment-service/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/deployment-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -v

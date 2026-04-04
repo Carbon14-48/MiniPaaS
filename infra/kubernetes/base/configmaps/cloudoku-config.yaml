@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudoku-config
+  namespace: cloudoku
+data:
+  DATABASE_URL: "postgresql://cloudoku:cloudoku@postgres:5432/cloudoku"
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  LOG_LEVEL: "INFO"
