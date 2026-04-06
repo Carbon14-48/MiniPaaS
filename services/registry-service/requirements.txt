@@ -1,0 +1,13 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# Validation des données
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# Docker SDK — pour taguer et pousser les images
+docker==7.1.0
+
+# Variables d'environnement (.env)
+python-dotenv==1.0.1

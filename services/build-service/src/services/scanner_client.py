@@ -11,7 +11,7 @@ Flux :
       ↓
   scan_image("user42/myapp:v1") appelé ici
       ↓
-  POST http://security-scanner:8003/scan  { "image_tag": "user42/myapp:v1" }
+  POST http://security-scanner:8006/scan  { "image_tag": "user42/myapp:v1" }
       ↓
   Le scanner analyse l'image avec Trivy et répond :
     { "critical": false, "vulnerabilities": [{"id": "CVE-2024-5678", "severity": "medium"}] }

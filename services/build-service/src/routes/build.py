@@ -4,11 +4,11 @@ routes/build.py
 Définit les endpoints HTTP du build-service :
 
   POST /build            → déclenche un build complet
-  GET  /build/{job_id}   → statut d'un build existant (owner only)
   GET  /build/me         → historique des builds de l'utilisateur connecté
+  GET  /build/{job_id}   → statut d'un build existant (owner only)
   GET  /build/user/{uid} → endpoint legacy, restreint au propriétaire
 
-C'est ici que toute la logique est orchestrée :
+ C'est ici que toute la logique est orchestrée :
   1. Extraire et vérifier le JWT (auth_client)
   2. Cloner le repo (git_service)
   3. Détecter/générer le Dockerfile (docker_service)
@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 from src.db import get_db
 from src.models.job import BuildJob, BuildStatus
@@ -56,6 +57,16 @@ class BuildResponse(BaseModel):
     build_logs: Optional[str] = None
     reason: Optional[str] = None        # rempli si status = "blocked" ou "failed"
     scan_result: Optional[dict] = None
+
+
+class BuildHistoryItem(BaseModel):
+    """Réponse pour GET /build/me — élément de l'historique."""
+    job_id: str
+    app_name: str
+    status: str
+    image_tag: Optional[str] = None
+    created_at: datetime
+    finished_at: Optional[datetime] = None
 
 
 # ─── Endpoint principal : déclenche un build ────────────────────────────────
@@ -194,6 +205,40 @@ async def trigger_build(
 
 # ─── Endpoint : statut d'un build par son ID ────────────────────────────────
 
+@router.get("/build/me", response_model=list[BuildHistoryItem])
+async def get_my_builds(
+    authorization: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Liste tous les builds d'un utilisateur, du plus récent au plus ancien.
+    Utile pour afficher l'historique dans le dashboard frontend.
+    """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header Authorization invalide. Format attendu : Bearer <token>",
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    user_id = await verify_token(token)
+
+    jobs = db.query(BuildJob).filter(
+        BuildJob.user_id == user_id
+    ).order_by(BuildJob.created_at.desc()).all()
+
+    return [
+        BuildHistoryItem(
+            job_id=job.job_id,
+            app_name=job.app_name,
+            status=job.status.value,
+            image_tag=job.image_tag,
+            created_at=job.created_at,
+            finished_at=job.finished_at,
+        )
+        for job in jobs
+    ]
+
+
 @router.get("/build/{job_id}", response_model=BuildResponse)
 async def get_build(
     job_id: str,
@@ -234,42 +279,6 @@ async def get_build(
         build_logs=job.build_logs,
         scan_result=job.scan_result
     )
-
-
-# ─── Endpoint : historique des builds d'un utilisateur ──────────────────────
-
-@router.get("/build/me")
-async def get_my_builds(
-    authorization: str = Header(...),
-    db: Session = Depends(get_db),
-):
-    """
-    Liste tous les builds d'un utilisateur, du plus récent au plus ancien.
-    Utile pour afficher l'historique dans le dashboard frontend.
-    """
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header Authorization invalide. Format attendu : Bearer <token>",
-        )
-    token = authorization.removeprefix("Bearer ").strip()
-    user_id = await verify_token(token)
-
-    jobs = db.query(BuildJob).filter(
-        BuildJob.user_id == user_id
-    ).order_by(BuildJob.created_at.desc()).all()
-
-    return [
-        {
-            "job_id": job.job_id,
-            "app_name": job.app_name,
-            "status": job.status.value,
-            "image_tag": job.image_tag,
-            "created_at": job.created_at.isoformat(),
-            "finished_at": job.finished_at.isoformat() if job.finished_at else None
-        }
-        for job in jobs
-    ]
 
 
 @router.get("/build/user/{user_id}")
