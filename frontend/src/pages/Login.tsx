@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../lib/api';
+import AuthBackground from '../components/layout/AuthBackground';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -24,13 +25,15 @@ export default function Login() {
     try {
       const { url } = await authApi.githubAuthUrl();
       setGithubUrl(url);
+      window.location.href = url;
     } catch {
       clearError();
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+    <AuthBackground>
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
@@ -116,7 +119,7 @@ export default function Login() {
                   rel="noopener noreferrer"
                   className="block w-full text-center px-4 py-2 border border-green-700 rounded-md shadow-sm text-sm font-medium text-green-400 bg-green-500/10 hover:bg-green-500/20"
                 >
-                  Click here to authorize with GitHub (opens new tab)
+                  If redirect did not start, click here
                 </a>
               </div>
             )}
@@ -124,5 +127,6 @@ export default function Login() {
         </div>
       </div>
     </div>
+    </AuthBackground>
   );
 }

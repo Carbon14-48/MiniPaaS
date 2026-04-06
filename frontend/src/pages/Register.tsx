@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AuthBackground from '../components/layout/AuthBackground';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -20,7 +21,8 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
+    <AuthBackground>
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
@@ -88,5 +90,6 @@ export default function Register() {
         </form>
       </div>
     </div>
+    </AuthBackground>
   );
 }
