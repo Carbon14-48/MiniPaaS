@@ -1,26 +1,49 @@
+"""
+main.py
+-------
+Point d'entrée du build-service.
+
+Crée l'application FastAPI, enregistre les routes, et au démarrage
+crée automatiquement les tables en base si elles n'existent pas.
+
+Ce fichier est lancé par la commande :
+  uvicorn src.main:app --host 0.0.0.0 --port 8002
+"""
+
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from src.config import settings
-from src.routes import health, builds
+from src.db import engine, Base
+from src.routes.build import router
+
+# Importer les modèles pour qu'Alembic/SQLAlchemy les connaisse
+from src.models import job  # noqa: F401
 
 app = FastAPI(
-    title="Cloudoku Build Service",
-    description="Pulls source code, builds Docker images, stores in registry",
-    version="1.0.0",
+    title="Build Service — MiniPaaS",
+    description="Transforme du code source en image Docker prête à déployer.",
+    version="1.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(builds.router, prefix="/builds", tags=["builds"])
+@app.on_event("startup")
+def create_tables():
+    """
+    Crée toutes les tables en base au démarrage si elles n'existent pas.
+    En production, utiliser Alembic (alembic upgrade head) à la place.
+    """
+    Base.metadata.create_all(bind=engine)
 
 
-@app.get("/")
-async def root():
-    return {"service": "build-service", "status": "running"}
+# Enregistre les routes du build
+# Tous les endpoints seront accessibles sous /
+# Ex: POST /build, GET /build/{job_id}
+app.include_router(router)
+
+
+@app.get("/health")
+def health():
+    """
+    Endpoint de santé — appelé par Docker Compose pour savoir si le service
+    est prêt à recevoir des requêtes.
+    Retourne toujours 200 si le service tourne.
+    """
+    return {"status": "ok", "service": "build-service"}

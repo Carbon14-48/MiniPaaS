@@ -1,8 +1,29 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-pydantic-settings==2.7.0
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# Validation des données
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# Appels HTTP vers les autres services (auth, scanner, registry)
+httpx==0.27.0
+
+# Docker SDK — pour lancer docker build depuis Python
+docker==7.1.0
+
+# Git — pour cloner les repos utilisateurs
+gitpython==3.1.43
+
+# Base de données
+sqlalchemy==2.0.30
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Variables d'environnement (.env)
 python-dotenv==1.0.1
-pika==1.3.2
-pytest==8.3.4
-httpx==0.28.1
+
+# Tests
+pytest==8.2.0
+pytest-asyncio==0.23.6
+httpx==0.27.0
