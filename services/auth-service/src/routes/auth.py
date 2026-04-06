@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
@@ -110,10 +110,10 @@ async def github_auth():
     return GitHubAuthUrlResponse(url=url)
 
 
-@router.post("/github/callback", response_model=TokenResponse)
-async def github_callback(callback_data: GitHubCallback, db: Session = Depends(get_db)):
+@router.get("/callback", response_model=TokenResponse)
+async def github_callback(code: str = Query(...), db: Session = Depends(get_db)):
     service = UserService(db)
-    user, error = await service.login_github(callback_data.code)
+    user, error = await service.login_github(code)
     if error:
         raise HTTPException(status_code=401, detail=error)
     access_token = create_access_token({"sub": str(user.id)})

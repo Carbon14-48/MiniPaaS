@@ -4,9 +4,10 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_NAME: str = "auth-service"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
     ALLOWED_ORIGINS: list[str] = ["*"]
 
-    DATABASE_URL: str = "postgresql://cloudoku:cloudoku@postgres:5432/cloudoku"
+    DATABASE_URL: str = "postgresql://minipaas:minipaas@localhost:5432/minipaas"
 
     JWT_SECRET_KEY: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

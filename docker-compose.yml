@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: cloudoku
-      POSTGRES_PASSWORD: cloudoku
-      POSTGRES_DB: cloudoku
+      POSTGRES_USER: minipaas
+      POSTGRES_PASSWORD: minipaas
+      POSTGRES_DB: minipaas
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cloudoku"]
+      test: ["CMD-SHELL", "pg_isready -U minipaas"]
       interval: 5s
       timeout: 5s
       retries: 5
