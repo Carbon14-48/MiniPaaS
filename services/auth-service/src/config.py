@@ -10,7 +10,15 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION_MINUTES: int = 60
+    JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: int = 15
+
+    REFRESH_TOKEN_SECRET: str = "change-me-in-production-refresh"
+    REFRESH_TOKEN_ALGORITHM: str = "HS256"
+    REFRESH_TOKEN_EXPIRATION_DAYS: int = 7
+
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    GITHUB_REDIRECT_URI: str = "http://localhost:3000/auth/github/callback"
 
     class Config:
         env_file = ".env"

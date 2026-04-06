@@ -21,6 +21,13 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 
+@app.on_event("startup")
+async def startup():
+    from src.models.user import Base
+    from src.database import engine
+    Base.metadata.create_all(bind=engine)
+
+
 @app.get("/")
 async def root():
     return {"service": "auth-service", "status": "running"}
