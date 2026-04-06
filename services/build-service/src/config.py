@@ -12,11 +12,11 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # URLs des autres microservices
     auth_service_url: str = "http://auth-service:8001"
-    scanner_service_url: str = "http://security-scanner:8003"
+    scanner_service_url: str = "http://security-scanner:8006"
     registry_service_url: str = "http://registry-service:8005"
 
     # Base de données
-    database_url: str = "postgresql://builduser:buildpass@build-db:5432/builddb"
+    database_url: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
 
     # Dossier temporaire pour les clones Git
     build_workdir: str = "/tmp/builds"

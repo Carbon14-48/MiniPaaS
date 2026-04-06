@@ -1,21 +1,7 @@
-"""
-services/auth_client.py
------------------------
-FICHIER PYTHON INTERNE AU BUILD-SERVICE — pas un microservice.
+"""Auth client for service-to-service identity checks.
 
-Son unique rôle : appeler auth-service:8001 via HTTP pour vérifier un JWT.
-Le build-service appelle cette fonction avant de faire quoi que ce soit.
-
-Flux :
-  Route reçoit requête avec header "Authorization: Bearer eyJ..."
-      ↓
-  verify_token("eyJ...") appelé ici
-      ↓
-  POST http://auth-service:8001/verify  { "token": "eyJ..." }
-      ↓
-  auth-service répond { "valid": true, "user_id": 42 }
-      ↓
-  On retourne user_id=42 à la route, ou on lève une exception si invalide
+Build-service delegates token validation to auth-service via a stable
+introspection endpoint: GET /auth/me with Bearer token.
 """
 
 import httpx
@@ -24,39 +10,55 @@ from src.config import settings
 
 
 async def verify_token(token: str) -> int:
-    """
-    Vérifie le JWT auprès de l'auth-service.
+    """Validate token and return user_id from auth-service.
 
-    Paramètre :
-        token : le JWT brut extrait du header Authorization (sans "Bearer ")
-
-    Retourne :
-        user_id (int) : l'identifiant de l'utilisateur si le token est valide
-
-    Lève :
-        HTTPException 401 : si le token est invalide ou expiré
-        HTTPException 503 : si l'auth-service est injoignable
+    Contract:
+    - Request: GET {auth_service_url}/auth/me with Authorization: Bearer <token>
+    - Response: 200 JSON containing at least {"id": <int>}.
     """
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(
-                f"{settings.auth_service_url}/verify",
-                json={"token": token}
+            response = await client.get(
+                f"{settings.auth_service_url}/auth/me",
+                headers={"Authorization": f"Bearer {token}"},
             )
     except httpx.ConnectError:
-        # L'auth-service est down ou pas encore démarré
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Auth service injoignable"
         )
 
-    data = response.json()
-
-    if not data.get("valid"):
+    if response.status_code in (401, 403):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalide ou expiré"
         )
 
-    # Retourne l'ID utilisateur pour l'utiliser dans la suite du build
-    return int(data["user_id"])
+    if response.status_code >= 500:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auth service indisponible"
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Réponse auth-service invalide"
+        )
+
+    try:
+        data = response.json()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Réponse auth-service non JSON"
+        )
+
+    user_id = data.get("id")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Champ user id manquant dans la réponse auth-service"
+        )
+
+    return int(user_id)

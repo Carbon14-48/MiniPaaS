@@ -162,14 +162,34 @@ def test_build_blocked_by_scanner():
 
 def test_get_build_not_found():
     """Un job_id inexistant doit retourner 404."""
-    response = client.get("/build/job_inexistant")
-    assert response.status_code == 404
+    with patch("src.routes.build.verify_token", new_callable=AsyncMock) as mock_auth:
+        mock_auth.return_value = 1
+        response = client.get(
+            "/build/job_inexistant",
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        assert response.status_code == 404
 
 
 # ── Test 7 : GET /build/user/{user_id} vide ──────────────────────────────────
 
 def test_get_user_builds_empty():
     """Un utilisateur sans builds doit recevoir une liste vide."""
-    response = client.get("/build/user/9999")
-    assert response.status_code == 200
-    assert response.json() == []
+    with patch("src.routes.build.verify_token", new_callable=AsyncMock) as mock_auth:
+        mock_auth.return_value = 9999
+        response = client.get(
+            "/build/me",
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        assert response.status_code == 200
+        assert response.json() == []
+
+
+def test_get_user_builds_forbidden_when_not_owner():
+    with patch("src.routes.build.verify_token", new_callable=AsyncMock) as mock_auth:
+        mock_auth.return_value = 42
+        response = client.get(
+            "/build/user/9999",
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        assert response.status_code == 403

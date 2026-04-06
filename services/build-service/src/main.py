@@ -11,6 +11,7 @@ Ce fichier est lancé par la commande :
 """
 
 from fastapi import FastAPI
+from src.config import settings
 from src.db import engine, Base
 from src.routes.build import router
 
@@ -30,7 +31,8 @@ def create_tables():
     Crée toutes les tables en base au démarrage si elles n'existent pas.
     En production, utiliser Alembic (alembic upgrade head) à la place.
     """
-    Base.metadata.create_all(bind=engine)
+    if settings.env.lower() == "development":
+        Base.metadata.create_all(bind=engine)
 
 
 # Enregistre les routes du build

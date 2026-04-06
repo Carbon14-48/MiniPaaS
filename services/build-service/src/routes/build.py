@@ -1,11 +1,12 @@
 """
 routes/build.py
 ---------------
-Définit les 3 endpoints HTTP du build-service :
+Définit les endpoints HTTP du build-service :
 
   POST /build            → déclenche un build complet
-  GET  /build/{job_id}   → statut d'un build existant
-  GET  /build/user/{uid} → historique des builds d'un utilisateur
+  GET  /build/{job_id}   → statut d'un build existant (owner only)
+  GET  /build/me         → historique des builds de l'utilisateur connecté
+  GET  /build/user/{uid} → endpoint legacy, restreint au propriétaire
 
 C'est ici que toute la logique est orchestrée :
   1. Extraire et vérifier le JWT (auth_client)
@@ -85,7 +86,7 @@ async def trigger_build(
 
     # ── Étape 3 : Créer le job en base avec status "pending" ─────────────────
     # Génère un ID unique pour ce build
-    job_id = str(uuid.uuid4())[:8]  # ex: "a3f9c1b2" — court et lisible
+    job_id = str(uuid.uuid4())
 
     # Compte combien de builds cet utilisateur a déjà fait pour cette app
     # (sert à incrémenter le numéro de version : v1, v2, v3...)
@@ -194,17 +195,35 @@ async def trigger_build(
 # ─── Endpoint : statut d'un build par son ID ────────────────────────────────
 
 @router.get("/build/{job_id}", response_model=BuildResponse)
-def get_build(job_id: str, db: Session = Depends(get_db)):
+async def get_build(
+    job_id: str,
+    authorization: str = Header(...),
+    db: Session = Depends(get_db),
+):
     """
     Retourne le statut et les détails d'un build existant.
     Utilisé par le Gateway pour que l'utilisateur consulte ses builds.
     """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header Authorization invalide. Format attendu : Bearer <token>",
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    user_id = await verify_token(token)
+
     job = db.query(BuildJob).filter(BuildJob.job_id == job_id).first()
 
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Build {job_id} introuvable"
+        )
+
+    if job.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès interdit à ce build",
         )
 
     return BuildResponse(
@@ -219,12 +238,23 @@ def get_build(job_id: str, db: Session = Depends(get_db)):
 
 # ─── Endpoint : historique des builds d'un utilisateur ──────────────────────
 
-@router.get("/build/user/{user_id}")
-def get_user_builds(user_id: int, db: Session = Depends(get_db)):
+@router.get("/build/me")
+async def get_my_builds(
+    authorization: str = Header(...),
+    db: Session = Depends(get_db),
+):
     """
     Liste tous les builds d'un utilisateur, du plus récent au plus ancien.
     Utile pour afficher l'historique dans le dashboard frontend.
     """
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header Authorization invalide. Format attendu : Bearer <token>",
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    user_id = await verify_token(token)
+
     jobs = db.query(BuildJob).filter(
         BuildJob.user_id == user_id
     ).order_by(BuildJob.created_at.desc()).all()
@@ -240,3 +270,26 @@ def get_user_builds(user_id: int, db: Session = Depends(get_db)):
         }
         for job in jobs
     ]
+
+
+@router.get("/build/user/{user_id}")
+async def get_user_builds_deprecated(
+    user_id: int,
+    authorization: str = Header(...),
+    db: Session = Depends(get_db),
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header Authorization invalide. Format attendu : Bearer <token>",
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    token_user_id = await verify_token(token)
+
+    if token_user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès interdit à l'historique d'un autre utilisateur",
+        )
+
+    return await get_my_builds(authorization=authorization, db=db)

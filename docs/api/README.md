@@ -2,6 +2,10 @@
 
 All services expose OpenAPI docs at `/docs` when running.
 
+## Contracts
+
+- `service-auth-contract-v1.md` - shared service-to-service auth standard
+
 ## Service Ports
 
 | Service | Port | Docs URL |
