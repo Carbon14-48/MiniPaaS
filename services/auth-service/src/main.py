@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
@@ -23,6 +24,8 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 @app.on_event("startup")
 async def startup():
+    if os.environ.get("TESTING"):
+        return
     from src.models.user import Base
     from src.database import engine
     Base.metadata.create_all(bind=engine)
