@@ -1,4 +1,4 @@
-# Cloudoku - Mini Heroku-like PaaS
+# MiniPaas - Mini Heroku-like PaaS
 
 A lightweight Platform-as-a-Service that allows developers to deploy applications by simply pushing their code. Built with microservices architecture and DevSecOps practices.
 
