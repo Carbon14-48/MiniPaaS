@@ -16,7 +16,7 @@ docker==7.1.0
 gitpython==3.1.43
 
 # Base de données
-sqlalchemy==2.0.30
+sqlalchemy==2.0.36
 alembic==1.13.1
 psycopg2-binary>=2.9.9
 
