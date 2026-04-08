@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from src.config import settings
 from src.routes import health, scans
 
 app = FastAPI(
     title="Cloudoku Security Scanner",
-    description="Scans code and Docker images for vulnerabilities",
-    version="1.0.0",
+    description="Multi-layer Docker image security scanner — CVE, malware, secrets, misconfigs",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -23,4 +24,4 @@ app.include_router(scans.router, prefix="/scans", tags=["scans"])
 
 @app.get("/")
 async def root():
-    return {"service": "security-scanner", "status": "running"}
+    return {"service": "security-scanner", "status": "running", "version": "2.0.0"}
