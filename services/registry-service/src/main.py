@@ -1,27 +1,30 @@
 """
-src/main.py
------------
+main.py
+-------
 Point d'entrée du registry-service.
+Lance FastAPI, branche les routes, crée les tables en dev.
 """
-
-import logging
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from src.db import engine, Base
+from src.routes.registry import router
 from src.config import settings
-from src.routes.health import router as health_router
-from src.routes.push import router as push_router
+from src.models import image  # noqa: F401 — nécessaire pour SQLAlchemy
 
-logging.basicConfig(level=settings.log_level)
-
-app = FastAPI(title="registry-service", version="1.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Registry Service — MiniPaaS",
+    description="Stocke et gère les images Docker des utilisateurs.",
+    version="1.0.0"
 )
 
-app.include_router(health_router)
-app.include_router(push_router)
+
+@app.on_event("startup")
+def on_startup():
+    """
+    En développement : crée les tables automatiquement.
+    En production : utiliser alembic upgrade head.
+    """
+    if settings.env == "development":
+        Base.metadata.create_all(bind=engine)
+
+
+app.include_router(router)
