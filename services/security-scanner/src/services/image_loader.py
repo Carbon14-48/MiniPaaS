@@ -3,6 +3,7 @@ from docker.models.images import Image
 import tempfile
 import shutil
 import os
+from contextlib import contextmanager
 from typing import Generator
 
 from src.config import settings
@@ -152,6 +153,7 @@ class ImageLoader:
             self.client.close()
 
 
+@contextmanager
 def get_image_loader() -> Generator[ImageLoader, None, None]:
     """Context manager for ImageLoader."""
     loader = ImageLoader()

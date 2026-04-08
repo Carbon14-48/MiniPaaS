@@ -1,13 +1,16 @@
+import os
+import tarfile
 import tempfile
 import time
 import logging
+import shutil
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException
+import docker
 
 from src.models.scan_request import ScanRequest
-from src.models.scan_result import ScanResponse, ScanStatus, Verdict, HealthResponse, ToolStatus
+from src.models.scan_result import ScanResponse, ScanStatus, Verdict, ToolStatus
 from src.models.findings import SeverityBreakdown
 from src.scanners import (
     TrivyScanner,
@@ -18,16 +21,48 @@ from src.scanners import (
     check_base_image,
     CosignSigner,
 )
-from src.services import (
-    ResultAggregator,
-    PolicyEngine,
-    ImageLoader,
-    get_image_loader,
-)
+from src.services import ResultAggregator, PolicyEngine
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _extract_image(image_tag: str, dest_dir: str) -> bool:
+    """
+    Extract the merged filesystem of a Docker image to a directory.
+    Uses docker create + docker cp to get the actual files visible at runtime,
+    not raw layer tarballs. This is what TruffleHog, ClamAV, and YARA need
+    to scan actual application files and secrets.
+    """
+    client = docker.from_env()
+    container = None
+    try:
+        container = client.containers.create(image_tag)
+        bits, _ = container.get_archive("/")
+        tar_path = os.path.join(dest_dir, "rootfs.tar")
+        with open(tar_path, "wb") as f:
+            for chunk in bits:
+                f.write(chunk)
+        with tarfile.open(tar_path, "r") as tar:
+            tar.extractall(dest_dir)
+        os.remove(tar_path)
+        logger.info(f"Extracted {image_tag} filesystem to {dest_dir}")
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to extract image {image_tag}: {e}")
+        return False
+    finally:
+        if container:
+            try:
+                container.remove(force=True)
+            except Exception:
+                pass
+        try:
+            client.close()
+        except Exception:
+            pass
 
 
 def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
@@ -58,13 +93,22 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
 
     base_image_raw = None
     try:
-        with get_image_loader() as loader:
-            base_image_str = loader.get_base_image(image_tag)
-            base_image_raw = check_base_image(base_image_str)
+        client = docker.from_env()
+        try:
+            info = client.api.inspect_image(image_tag)
+            parent_id = info.get("Parent", "")
+            if not parent_id:
+                base_str = "scratch"
+            else:
+                parent_image = client.images.get(parent_id)
+                tags = parent_image.tags
+                base_str = tags[0] if tags else parent_id[:12]
+            base_image_raw = check_base_image(base_str)
+        finally:
+            client.close()
         logger.info(f"Base image check: {base_image_raw}")
     except Exception as e:
         logger.warning(f"Failed to determine base image: {e}")
-        base_image_raw = None
 
     return {
         "vulnerabilities": trivy_vulns,
@@ -80,7 +124,7 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
 async def scan_image(request: ScanRequest):
     """
     Full image security scan pipeline:
-    1. Load image from Docker daemon
+    1. Extract image layers
     2. Run all scanners (Trivy, ClamAV, YARA, TruffleHog, Dockle)
     3. Aggregate results
     4. Apply policy
@@ -90,6 +134,8 @@ async def scan_image(request: ScanRequest):
     extract_dir = tempfile.mkdtemp(prefix="scan_")
 
     try:
+        _extract_image(request.image_tag, extract_dir)
+
         scan_results = _run_full_scan(request.image_tag, extract_dir)
 
         aggregator = ResultAggregator()
@@ -109,9 +155,9 @@ async def scan_image(request: ScanRequest):
 
         signed = False
         signature = None
+        signer: CosignSigner = scan_results["signer"]
         if status == ScanStatus.PASS:
             try:
-                signer: CosignSigner = scan_results["signer"]
                 signature = signer.sign(request.image_tag)
                 signed = signature is not None
             except Exception as e:
@@ -140,9 +186,9 @@ async def scan_image(request: ScanRequest):
 
         return response
 
-    except FileNotFoundError as e:
-        logger.error(f"Image not found: {e}")
-        raise HTTPException(status_code=404, detail=str(e))
+    except docker.errors.NotFound:
+        logger.error(f"Image not found: {request.image_tag}")
+        raise HTTPException(status_code=404, detail=f"Image not found: {request.image_tag}")
     except RuntimeError as e:
         logger.error(f"Scan failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -150,7 +196,6 @@ async def scan_image(request: ScanRequest):
         logger.error(f"Unexpected scan error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Scan error: {e}")
     finally:
-        import shutil
         try:
             shutil.rmtree(extract_dir)
         except Exception:

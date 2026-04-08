@@ -23,6 +23,13 @@ class ClamavScanner:
         """
         findings = []
 
+        if not self.is_available():
+            logger.warning(
+                "ClamAV not available or no database — skipping scan. "
+                "Run 'freshclam' to download signatures."
+            )
+            return findings
+
         if not os.path.isdir(extract_dir):
             logger.warning(f"Extraction directory does not exist: {extract_dir}")
             return findings
@@ -46,28 +53,9 @@ class ClamavScanner:
                 timeout=300,
             )
 
-            output = result.stdout + result.stderr
+            output = result.stdout + "\n" + result.stderr
 
-            for line in output.splitlines():
-                line_lower = line.lower()
-                if "found" in line_lower or "clamav:" in line_lower:
-                    parts = line.split(":")
-                    if len(parts) >= 3:
-                        file_path = parts[1].strip()
-                        signature_raw = ":".join(parts[2:]).strip()
-
-                        if file_path and signature_raw:
-                            finding = MalwareFinding(
-                                rule=f"clamav:{signature_raw}",
-                                file=file_path,
-                                signature=signature_raw,
-                                severity=Severity.CRITICAL,
-                                category="malware",
-                            )
-                            findings.append(finding)
-                            logger.warning(
-                                f"ClamAV detected malware: {file_path} — {signature_raw}"
-                            )
+            findings = self._parse_output(output)
 
         except subprocess.TimeoutExpired:
             logger.error("ClamAV scan timed out")
@@ -75,6 +63,43 @@ class ClamavScanner:
             logger.error("clamscan binary not found — ClamAV not installed")
         except Exception as e:
             logger.error(f"ClamAV scan failed: {e}")
+
+        return findings
+
+    def _parse_output(self, output: str) -> list[MalwareFinding]:
+        """Parse ClamAV output and extract real malware findings."""
+        findings = []
+        non_malware_prefixes = (
+            "No ", "ERROR", "LibClamAV", "clamscan: ",
+            "stream:", "Can't", "I/O", "database",
+        )
+
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+
+            # Skip non-malware lines
+            if any(line.startswith(p) for p in non_malware_prefixes):
+                continue
+
+            line_lower = line.lower()
+            if "FOUND" in line_upper if (line_upper := line.upper()) else False:
+                parts = line.split(":")
+                if len(parts) >= 2:
+                    file_path = parts[0].strip()
+                    signature = ":".join(parts[1:]).strip().replace("FOUND", "").strip()
+
+                    if file_path and signature:
+                        findings.append(MalwareFinding(
+                            rule=f"clamav:{signature}",
+                            file=file_path,
+                            signature=signature,
+                            severity=Severity.CRITICAL,
+                            category="malware",
+                        ))
+                        logger.warning(
+                            f"ClamAV detected malware: {file_path} — {signature}"
+                        )
 
         return findings
 
@@ -93,6 +118,9 @@ class ClamavScanner:
             else:
                 logger.warning(f"freshclam failed: {result.stderr}")
                 return False
+        except FileNotFoundError:
+            logger.error("freshclam not found")
+            return False
         except Exception as e:
             logger.error(f"Failed to update ClamAV DB: {e}")
             return False
@@ -102,7 +130,12 @@ class ClamavScanner:
         try:
             db_main = os.path.join(self.clamav_db, "main.cvd")
             db_cld = os.path.join(self.clamav_db, "main.cld")
+            db_cld2 = os.path.join(self.clamav_db, "main.cld")
             if not (os.path.exists(db_main) or os.path.exists(db_cld)):
+                logger.warning(
+                    f"ClamAV database not found at {self.clamav_db}. "
+                    f"Run 'freshclam' to download signatures."
+                )
                 return False
             result = subprocess.run(
                 ["clamscan", "--version"],
