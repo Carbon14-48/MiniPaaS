@@ -1,24 +1,21 @@
 """
 services/scanner_client.py
 --------------------------
-FICHIER PYTHON INTERNE AU BUILD-SERVICE — pas un microservice.
+Calls security-scanner:8006 after a successful docker build.
+If the scanner blocks the image (policy violation), the build is aborted.
+If the scanner warns, the build proceeds but warnings are logged.
 
-Son unique rôle : appeler security-scanner:8003 via HTTP après le docker build.
-Si le scanner détecte une CVE critique, le build est bloqué (image non pushée).
-
-Flux :
-  Après docker build réussi → image "user42/myapp:v1" existe localement
-      ↓
-  scan_image("user42/myapp:v1") appelé ici
-      ↓
-  POST http://security-scanner:8006/scan  { "image_tag": "user42/myapp:v1" }
-      ↓
-  Le scanner analyse l'image avec Trivy et répond :
-    { "critical": false, "vulnerabilities": [{"id": "CVE-2024-5678", "severity": "medium"}] }
-  ou
-    { "critical": true, "cve": "CVE-2024-1234", "severity": "CRITICAL", "package": "libssl" }
-      ↓
-  On retourne le résultat brut à la route pour décider de la suite
+New response format (v2.0):
+  {
+    "status": "PASS" | "WARN" | "BLOCKED",
+    "verdict": "policy_violation | policy_passed | advisory_warning",
+    "severity_breakdown": {"critical": N, "high": N, "medium": N, "low": N},
+    "block_reason": "...",
+    "policy_passed": bool,
+    "signed": bool,
+    "warnings": [...],
+    "details": {...}
+  }
 """
 
 import httpx
@@ -26,40 +23,55 @@ from fastapi import HTTPException, status
 from src.config import settings
 
 
-async def scan_image(image_tag: str) -> dict:
+async def scan_image(image_tag: str, user_id: int, app_name: str) -> dict:
     """
-    Envoie l'image au security-scanner pour analyse CVE.
+    Sends the image to security-scanner for full security analysis.
 
-    Paramètre :
-        image_tag : tag de l'image à scanner (ex: "user42/myapp:v1")
+    Params:
+        image_tag: tag of the image to scan (e.g. "user42/myapp:v1")
+        user_id: owner user ID
+        app_name: application name
 
-    Retourne :
-        dict avec au minimum :
-          - "critical" (bool) : True si une CVE critique a été trouvée
-          - "vulnerabilities" (list) : liste des vulnérabilités trouvées
-          - "cve" (str, optionnel) : ID de la CVE critique si présente
+    Returns:
+        Full scan result dict from security-scanner.
 
-    Lève :
-        HTTPException 503 : si le scanner est injoignable
+    Raises:
+        HTTPException 503: scanner unreachable (fail-safe — blocks build)
+        HTTPException 400: image blocked by policy
     """
     try:
-        # Timeout long car Trivy peut prendre du temps sur une grosse image
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
-                f"{settings.scanner_service_url}/scan",
-                json={"image_tag": image_tag}
+                f"{settings.scanner_service_url}/scans/image",
+                json={
+                    "image_tag": image_tag,
+                    "user_id": user_id,
+                    "app_name": app_name,
+                }
             )
             response.raise_for_status()
     except httpx.ConnectError:
-        # Le scanner est down → on bloque par sécurité (fail-safe)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Security scanner injoignable — build bloqué par sécurité"
+            detail="Security scanner unreachable — build blocked for safety"
         )
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Erreur scanner : {str(e)}"
+            detail=f"Security scanner error: {e.response.text}"
         )
 
-    return response.json()
+    result = response.json()
+
+    if result.get("status") == "BLOCKED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": f"Security policy violation: {result.get('block_reason')}",
+                "status": "BLOCKED",
+                "severity_breakdown": result.get("severity_breakdown"),
+                "details": result.get("details"),
+            }
+        )
+
+    return result

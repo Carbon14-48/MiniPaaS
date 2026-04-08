@@ -139,10 +139,14 @@ async def trigger_build(
         )
 
         # ── Étape 7 : Scanner l'image pour les CVE ────────────────────────────
-        scan_result = await scan_image(image_tag)
+        scan_result = await scan_image(
+            image_tag=image_tag,
+            user_id=user_id,
+            app_name=request.app_name,
+        )
 
-        if scan_result.get("critical"):
-            # CVE critique trouvée → on bloque, on ne push pas
+        if scan_result.get("status") == "BLOCKED":
+            # Politique de sécurité violée → on bloque, on ne push pas
             job.status = BuildStatus.blocked
             job.image_tag = image_tag
             job.build_logs = build_logs
@@ -156,7 +160,7 @@ async def trigger_build(
                 image_tag=image_tag,
                 build_logs=build_logs,
                 scan_result=scan_result,
-                reason=f"CVE critique détectée : {scan_result.get('cve', 'inconnue')}"
+                reason=scan_result.get("block_reason", "Security policy violation"),
             )
 
         # ── Étape 8 : Pousser l'image vers le registry ────────────────────────

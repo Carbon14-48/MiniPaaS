@@ -111,8 +111,12 @@ services:
     ports:
       - "8006:8000"
     env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - trivy_cache:/root/.cache/trivy
     depends_on:
       - rabbitmq
 
 volumes:
   postgres_data:
+  trivy_cache:
