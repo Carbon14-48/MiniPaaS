@@ -12,7 +12,6 @@ rule bash_reverse_shell_classic {
         category = "reverse_shell"
     strings:
         $s1 = "bash -i" ascii
-        $s2 = "&>/dev/tcp/" ascii
         $s3 = "/dev/tcp/" ascii
         $s4 = "0>&1" ascii
         $s5 = "1>&1" ascii
@@ -29,14 +28,13 @@ rule netcat_reverse_shell {
         category = "reverse_shell"
     strings:
         $s1 = "nc -e" ascii
-        $s2 = "nc -E" ascii
         $s3 = "nc -c" ascii
         $s4 = "/bin/nc" ascii
         $s5 = "nc.traditional" ascii
         $s6 = "nc.openbsd" ascii
         $s7 = "ncat" ascii
     condition:
-        (1 of ($s1, $s2, $s3)) or (2 of ($s4, $s5, $s6, $s7))
+        (1 of ($s1, $s3)) or (2 of ($s4, $s5, $s6, $s7))
 }
 
 rule python_reverse_shell {

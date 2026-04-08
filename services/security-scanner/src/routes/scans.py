@@ -95,20 +95,44 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
     try:
         client = docker.from_env()
         try:
-            info = client.api.inspect_image(image_tag)
-            parent_id = info.get("Parent", "")
-            if not parent_id:
-                base_str = "scratch"
-            else:
-                parent_image = client.images.get(parent_id)
-                tags = parent_image.tags
-                base_str = tags[0] if tags else parent_id[:12]
+            image_info = client.api.inspect_image(image_tag)
+            
+            base_str = None
+            
+            img_tags = image_info.get("RepoTags", [])
+            if img_tags:
+                base_str = img_tags[0]
+            
+            if not base_str:
+                parent_id = image_info.get("Parent", "")
+                if not parent_id:
+                    base_str = image_tag
+                else:
+                    try:
+                        parent_image = client.api.inspect_image(parent_id)
+                        parent_tags = parent_image.get("RepoTags", [])
+                        if parent_tags:
+                            base_str = parent_tags[0]
+                        else:
+                            grandparent_id = parent_image.get("Parent", "")
+                            if grandparent_id:
+                                grandparent_image = client.api.inspect_image(grandparent_id)
+                                grandparent_tags = grandparent_image.get("RepoTags", [])
+                                if grandparent_tags:
+                                    base_str = grandparent_tags[0]
+                    except Exception:
+                        base_str = image_tag
+            
+            if not base_str:
+                base_str = image_tag
+            
             base_image_raw = check_base_image(base_str)
         finally:
             client.close()
         logger.info(f"Base image check: {base_image_raw}")
     except Exception as e:
         logger.warning(f"Failed to determine base image: {e}")
+        base_image_raw = check_base_image(image_tag)
 
     return {
         "vulnerabilities": trivy_vulns,
