@@ -27,19 +27,17 @@ build-service:8003
 │                                                              │
 │  1. Load image from local Docker daemon                      │
 │           ↓                                                  │
-│  2a. Trivy scan     → CVE report (OS + lang deps)            │
+│  2a. Trivy scan     → CVE report (OS + lang deps)          │
 │  2b. ClamAV scan    → Malware signatures                    │
 │  2c. YARA scan      → Custom container malware rules         │
-│  2d. TruffleHog     → Secrets in layers + env vars           │
+│  2d. TruffleHog     → Secrets in layers + env vars          │
 │  2e. Dockle scan    → CIS benchmark misconfigs               │
 │           ↓                                                  │
 │  3. Aggregate all results into unified report                 │
 │           ↓                                                  │
 │  4. Apply policy engine → PASS / WARN / BLOCK                │
 │           ↓                                                  │
-│  5. If PASS: Cosign sign the image (mark as approved)       │
-│           ↓                                                  │
-│  6. Return verdict + full details to build-service           │
+│  5. Return verdict + full details to build-service           │
 └──────────────────────────────────────────────────────────────┘
     │
     │  ScanResult { status: "PASS" | "WARN" | "BLOCKED", ... }
@@ -58,8 +56,6 @@ build-service decides: push to registry or abort build
 | **YARA** | Custom container malware rule engine | Latest |
 | **TruffleHog v3** | Secrets detection in image layers | Latest |
 | **Dockle** | CIS Docker benchmark misconfiguration checks | Latest |
-| **Cosign** (Sigstore) | Image signing for approved images | Latest |
-| **Skopeo** | Layer extraction without Docker daemon | Latest |
 | **Docker SDK** | Image access via `/var/run/docker.sock` | Latest |
 
 All tools are installed inside the scanner's Docker container at build time.
@@ -354,8 +350,6 @@ rules/general_malware.yara
     "low": 47
   },
   "policy_passed": true,
-  "signed": true,
-  "signature": "sha256:aabbccdd...",
   "details": {
     "vulnerabilities": [...],
     "malware": [],
@@ -413,8 +407,7 @@ Returns scan history for a user (paginated).
     "clamav": "available",
     "yara": "available",
     "trufflehog": "available",
-    "dockle": "available",
-    "cosign": "available"
+    "dockle": "available"
   }
 }
 ```
@@ -439,8 +432,7 @@ services/security-scanner/
 │   │   ├── yara_scanner.py              # Custom YARA rule scanning
 │   │   ├── trufflehog_scanner.py        # Secrets detection
 │   │   ├── dockle_scanner.py            # CIS benchmark misconfigs
-│   │   ├── base_image_checker.py        # Allowlist enforcement
-│   │   └── signer.py                    # Cosign image signing
+│   │   └── base_image_checker.py        # Allowlist enforcement
 │   ├── scanners/rules/                  # Custom YARA rules
 │   │   ├── crypto_miners.yara
 │   │   ├── webshells.yara
@@ -505,11 +497,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN wget -qO- https://github.com/aquasecurity/trivy/releases/download/v0.56.0/trivy_0.56.0_Linux-64bit.tar.gz \
     | tar -xzf - -C /usr/local/bin trivy
 
-# Install Cosign
-RUN curl -fsSL https://sigstore.dev/gitalternate-installer.sh | sh \
-    || (wget -qO- https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -O /usr/local/bin/cosign \
-    && chmod +x /usr/local/bin/cosign)
-
 # Update ClamAV database
 RUN freshclam
 
@@ -532,7 +519,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/bin/trivy /usr/local/bin/trivy
-COPY --from=builder /usr/local/bin/cosign /usr/local/bin/cosign
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /var/lib/clamav /var/lib/clamav
 COPY --from=builder /etc/clamav /etc/clamav
@@ -569,7 +555,7 @@ docker>=7.1.0                    # Docker SDK for image access
 yara-python>=4.5.0              # YARA rule engine Python bindings
 clamd>=1.4.0                    # ClamAV Python client (or use subprocess)
 
-# No new dependencies for Trivy/TruffleHog/Dockle/Cosign —
+# No new dependencies for Trivy/TruffleHog/Dockle —
 # they are called as CLI subprocesses, not Python libraries
 ```
 
@@ -615,7 +601,6 @@ security-scanner:
 ### Phase 3: Aggregation & Policy
 - Implement `src/services/result_aggregator.py`
 - Implement `src/services/policy_engine.py`
-- Implement `src/scanners/signer.py` (Cosign signing)
 
 ### Phase 4: Integration & Testing
 - Update `build-service/src/services/scanner_client.py` for new response format
@@ -630,7 +615,6 @@ security-scanner:
 | Decision | Rationale |
 |---|---|
 | Sync scanning (no RabbitMQ) | Simplicity, build-service already waits. Async added later. |
-| Cosign signing all PASS images | Images can be verified before deployment. Key management via env var. |
 | Strict base image allowlist | Predictable, well-maintained bases reduce attack surface dramatically |
 | Custom YARA rules | ClamAV alone misses container-specific threats (miners, webshells, escapes) |
 | Block ALL secrets | Zero tolerance — secrets in images are an immediate credential leak risk |
@@ -646,12 +630,9 @@ security-scanner:
 SCANNER_MAX_TIMEOUT=300          # Max seconds for full scan
 CLAMAV_DB_PATH=/var/lib/clamav   # ClamAV signatures
 YARA_RULES_DIR=/rules            # Custom YARA rules location
-COSIGN_KEY_PATH=/keys/cosign.key # Cosign private key (or use env var)
-COSIGN_KEYLESS=false             # Use OIDC keyless signing (requires OIDC provider)
 
 # Tool paths (defaults usually fine)
 TRIVY_PATH=/usr/local/bin/trivy
-COSIGN_PATH=/usr/local/bin/cosign
 
 # Policy settings
 BLOCK_ON_HIGH_CVES=true         # Hard block HIGH CVEs (default: true)
@@ -698,7 +679,6 @@ async def scan_image(image_tag: str) -> dict:
 - **First scan is slow**: Trivy downloads ~50MB vulnerability DB on first run. Cache it with a volume mount.
 - **ClamAV DB updates**: Run `freshclam` daily. Add to Dockerfile or a cron job.
 - **YARA rules maintenance**: Review and update rules quarterly. New container malware emerges regularly.
-- **Cosign key rotation**: Rotate signing keys every 90 days. Store in Kubernetes Secret in production.
 - **Scan time budget**: Plan 30-60s per scan. Trivy is the slowest component (DB download + scan).
 - **Trivy DB volume**: Mount a persistent volume for Trivy's cache to avoid re-downloading on every container restart:
   ```yaml

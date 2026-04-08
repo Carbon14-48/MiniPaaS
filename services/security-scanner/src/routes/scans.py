@@ -19,7 +19,6 @@ from src.scanners import (
     TruffleHogScanner,
     DockleScanner,
     check_base_image,
-    CosignSigner,
 )
 from src.services import ResultAggregator, PolicyEngine
 from src.config import settings
@@ -72,7 +71,6 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
     yara = YaraScanner()
     trufflehog = TruffleHogScanner()
     dockle = DockleScanner()
-    signer = CosignSigner()
 
     logger.info(f"Starting full security scan for {image_tag}")
 
@@ -140,7 +138,6 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
         "secrets": secret_findings,
         "misconfigurations": misconfigs,
         "base_image": base_image_raw,
-        "signer": signer,
     }
 
 
@@ -152,7 +149,6 @@ async def scan_image(request: ScanRequest):
     2. Run all scanners (Trivy, ClamAV, YARA, TruffleHog, Dockle)
     3. Aggregate results
     4. Apply policy
-    5. Sign if PASS
     """
     start_time = time.time()
     extract_dir = tempfile.mkdtemp(prefix="scan_")
@@ -177,16 +173,6 @@ async def scan_image(request: ScanRequest):
             breakdown=breakdown,
         )
 
-        signed = False
-        signature = None
-        signer: CosignSigner = scan_results["signer"]
-        if status == ScanStatus.PASS:
-            try:
-                signature = signer.sign(request.image_tag)
-                signed = signature is not None
-            except Exception as e:
-                logger.warning(f"Signing failed (non-fatal): {e}")
-
         duration = time.time() - start_time
 
         response = ScanResponse(
@@ -197,8 +183,6 @@ async def scan_image(request: ScanRequest):
             severity_breakdown=breakdown,
             block_reason=block_reason,
             policy_passed=status != ScanStatus.BLOCKED,
-            signed=signed,
-            signature=signature,
             warnings=warnings,
             details=details,
         )
@@ -250,8 +234,5 @@ async def health_tools():
 
     trufflehog = TruffleHogScanner()
     tools.trufflehog = "available" if trufflehog.is_available() else "unavailable"
-
-    signer = CosignSigner()
-    tools.cosign = "available" if signer.is_available() else "unavailable"
 
     return tools

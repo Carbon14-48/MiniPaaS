@@ -12,12 +12,12 @@ rule bash_reverse_shell_classic {
         category = "reverse_shell"
     strings:
         $s1 = "bash -i" ascii
-        $s3 = "/dev/tcp/" ascii
-        $s4 = "0>&1" ascii
-        $s5 = "1>&1" ascii
-        $s6 = ">&1" ascii
+        $s2 = "/dev/tcp/" ascii
+        $s3 = "0>&1" ascii
+        $s4 = "1>&1" ascii
+        $s5 = ">&1" ascii
     condition:
-        $s1 and $s3
+        $s1 and $s2
 }
 
 rule netcat_reverse_shell {

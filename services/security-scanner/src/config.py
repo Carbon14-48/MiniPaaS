@@ -9,8 +9,7 @@ class Settings(BaseSettings):
 
     DOCKER_SOCKET_PATH: str = "/var/run/docker.sock"
 
-    TRIVY_PATH: str = "/usr/local/bin/trivy"
-    COSIGN_PATH: str = "/usr/local/bin/cosign"
+    TRIVY_PATH: str = "/usr/bin/trivy"
     YARA_RULES_DIR: str = "/rules"
     CLAMAV_DB_PATH: str = "/var/lib/clamav"
 
@@ -19,10 +18,6 @@ class Settings(BaseSettings):
     BLOCK_ON_MALWARE: bool = True
     BLOCK_ON_SECRETS: bool = True
     BLOCK_ON_ROOT_USER: bool = True
-
-    COSIGN_KEY_PATH: str = "/keys/cosign.key"
-    COSIGN_KEY_PASSWORD: str = ""
-    COSIGN_KEYLESS: bool = False
 
     class Config:
         env_file = ".env"

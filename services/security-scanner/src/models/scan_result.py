@@ -42,8 +42,6 @@ class ScanResponse(BaseModel):
     severity_breakdown: SeverityBreakdown
     block_reason: Optional[str] = None
     policy_passed: bool
-    signed: bool = False
-    signature: Optional[str] = None
     warnings: list[Warning] = Field(default_factory=list)
     details: ScanDetails = Field(default_factory=ScanDetails)
 
@@ -54,7 +52,6 @@ class ToolStatus(BaseModel):
     yara: str = "unknown"
     trufflehog: str = "unknown"
     dockle: str = "unknown"
-    cosign: str = "unknown"
 
 
 class HealthResponse(BaseModel):
