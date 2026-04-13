@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import GitHubCallback from './pages/GitHubCallback';
+import Deployments from './pages/Deployments';
+import Repositories from './pages/Repositories';
+import NewDeployment from './pages/NewDeployment';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -23,6 +26,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/deployments"
+        element={
+          <ProtectedRoute>
+            <Deployments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/repos"
+        element={
+          <ProtectedRoute>
+            <Repositories />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/deploy/new"
+        element={
+          <ProtectedRoute>
+            <NewDeployment />
           </ProtectedRoute>
         }
       />

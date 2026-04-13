@@ -10,6 +10,14 @@ export default defineConfig({
         target: 'http://localhost:8001',
         changeOrigin: true,
       },
+      '/repos': {
+        target: 'http://localhost:8008',
+        changeOrigin: true,
+      },
+      '/deployments': {
+        target: 'http://localhost:8008',
+        changeOrigin: true,
+      },
     },
   },
 })
