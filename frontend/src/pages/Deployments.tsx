@@ -1,0 +1,184 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { deployerApiService, Deployment } from '../lib/api';
+import DeploymentCard from '../components/ui/DeploymentCard';
+import LogViewer from '../components/ui/LogViewer';
+import { Link } from 'react-router-dom';
+
+export default function Deployments() {
+  const { accessToken } = useAuth();
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedLogs, setSelectedLogs] = useState<{ logs: string; source: string } | null>(null);
+
+  useEffect(() => {
+    loadDeployments();
+  }, [accessToken]);
+
+  const loadDeployments = async () => {
+    if (!accessToken) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await deployerApiService.getDeployments(accessToken);
+      setDeployments(data.deployments);
+    } catch (err) {
+      setError('Failed to load deployments');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStop = async (id: string) => {
+    if (!accessToken) return;
+    try {
+      await deployerApiService.stopDeployment(accessToken, id);
+      await loadDeployments();
+    } catch (err) {
+      setError('Failed to stop deployment');
+      console.error(err);
+    }
+  };
+
+  const handleStart = async (id: string) => {
+    if (!accessToken) return;
+    try {
+      await deployerApiService.startDeployment(accessToken, id);
+      await loadDeployments();
+    } catch (err) {
+      setError('Failed to start deployment');
+      console.error(err);
+    }
+  };
+
+  const handleRestart = async (id: string) => {
+    if (!accessToken) return;
+    try {
+      await deployerApiService.restartDeployment(accessToken, id);
+      await loadDeployments();
+    } catch (err) {
+      setError('Failed to restart deployment');
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!accessToken) return;
+    if (!confirm('Are you sure you want to delete this deployment?')) return;
+    try {
+      await deployerApiService.deleteDeployment(accessToken, id);
+      await loadDeployments();
+    } catch (err) {
+      setError('Failed to delete deployment');
+      console.error(err);
+    }
+  };
+
+  const handleViewLogs = async (id: string) => {
+    if (!accessToken) return;
+    try {
+      const logsData = await deployerApiService.getDeploymentLogs(accessToken, id);
+      setSelectedLogs(logsData);
+    } catch (err) {
+      setError('Failed to load logs');
+      console.error(err);
+    }
+  };
+
+  const runningCount = deployments.filter((d) => d.status === 'running').length;
+  const stoppedCount = deployments.filter((d) => d.status === 'stopped').length;
+  const buildingCount = deployments.filter((d) => d.status === 'building' || d.status === 'deploying').length;
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/dashboard" className="text-xl font-bold text-white">MiniPaaS</Link>
+            <div className="flex gap-4">
+              <Link to="/dashboard" className="text-gray-300 hover:text-white transition">Dashboard</Link>
+              <Link to="/deployments" className="text-white font-medium">Deployments</Link>
+              <Link to="/repos" className="text-gray-300 hover:text-white transition">Repositories</Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">Your Deployments</h1>
+            <p className="text-gray-400 mt-1">Manage your running and stopped deployments</p>
+          </div>
+          <Link
+            to="/repos"
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+          >
+            New Deployment
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-green-400">{runningCount}</div>
+            <div className="text-gray-400">Running</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-yellow-400">{buildingCount}</div>
+            <div className="text-gray-400">Building</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-gray-400">{stoppedCount}</div>
+            <div className="text-gray-400">Stopped</div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          </div>
+        ) : deployments.length === 0 ? (
+          <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
+            <p className="text-gray-400 mb-4">No deployments yet</p>
+            <Link
+              to="/repos"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition inline-block"
+            >
+              Deploy your first app
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {deployments.map((deployment) => (
+              <DeploymentCard
+                key={deployment.id}
+                deployment={deployment}
+                onStop={handleStop}
+                onStart={handleStart}
+                onRestart={handleRestart}
+                onDelete={handleDelete}
+                onViewLogs={handleViewLogs}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {selectedLogs && (
+        <LogViewer
+          logs={selectedLogs.logs}
+          source={selectedLogs.source}
+          onClose={() => setSelectedLogs(null)}
+        />
+      )}
+    </div>
+  );
+}
