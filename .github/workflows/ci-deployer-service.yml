@@ -1,0 +1,33 @@
+name: CI Deployer Service
+
+on:
+  push:
+    paths:
+      - 'services/deployer-service/**'
+  pull_request:
+    paths:
+      - 'services/deployer-service/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: services/deployer-service
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: services/deployer-service
+        run: pytest tests/ -v
+
+      - name: Lint
+        working-directory: services/deployer-service
+        run: ruff check src/
