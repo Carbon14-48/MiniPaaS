@@ -110,8 +110,6 @@ rule asp_net_backdoor {
     strings:
         $s1 = "Process.Start" ascii
         $s2 = "Request[" ascii
-        $s3 = "cmd.exe" ascii
-        $s4 = "System.Diagnostics" ascii
     condition:
         $s1 and $s2
 }
