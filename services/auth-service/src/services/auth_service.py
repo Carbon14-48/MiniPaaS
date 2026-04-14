@@ -135,6 +135,12 @@ class UserService:
     def get_by_github_id(self, github_id: str) -> Optional[User]:
         return self.get_by_oauth("github", github_id)
 
+    def get_github_token(self, user_id: int) -> Optional[str]:
+        user = self.get_by_id(user_id)
+        if user:
+            return user.github_access_token
+        return None
+
     def create(
         self,
         email: str,
@@ -142,6 +148,7 @@ class UserService:
         hashed_password: Optional[str] = None,
         oauth_provider: Optional[str] = None,
         oauth_id: Optional[str] = None,
+        github_access_token: Optional[str] = None,
     ) -> User:
         user = User(
             email=email.lower(),
@@ -149,6 +156,7 @@ class UserService:
             hashed_password=hashed_password,
             oauth_provider=oauth_provider,
             oauth_id=oauth_id,
+            github_access_token=github_access_token,
             is_verified=True,
         )
         self.db.add(user)
@@ -198,6 +206,8 @@ class UserService:
         if user:
             if not user.is_active:
                 return None, "Account is deactivated"
+            user.github_access_token = token_data["access_token"]
+            self.db.commit()
             return user, None
 
         if not github_email:
@@ -207,6 +217,7 @@ class UserService:
         if existing_by_email:
             existing_by_email.oauth_provider = "github"
             existing_by_email.oauth_id = github_id
+            existing_by_email.github_access_token = token_data["access_token"]
             self.db.commit()
             return existing_by_email, None
 
@@ -215,6 +226,7 @@ class UserService:
             name=github_name,
             oauth_provider="github",
             oauth_id=github_id,
+            github_access_token=token_data["access_token"],
         )
         return user, None
 

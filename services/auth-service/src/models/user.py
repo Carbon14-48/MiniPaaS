@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -16,6 +16,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     oauth_provider = Column(String(50), nullable=True)
     oauth_id = Column(String(255), nullable=True)
+    github_access_token = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

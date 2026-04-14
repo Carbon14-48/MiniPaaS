@@ -57,6 +57,11 @@ class GitHubAuthUrlResponse(BaseModel):
     url: str
 
 
+class GitHubTokenResponse(BaseModel):
+    github_token: Optional[str]
+    has_github_token: bool
+
+
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
@@ -129,6 +134,14 @@ async def get_me(current_user: User = Depends(get_current_user)):
         name=current_user.name,
         oauth_provider=current_user.oauth_provider,
         has_password=current_user.has_password(),
+    )
+
+
+@router.get("/github-token", response_model=GitHubTokenResponse)
+async def get_github_token(current_user: User = Depends(get_current_user)):
+    return GitHubTokenResponse(
+        github_token=current_user.github_access_token,
+        has_github_token=current_user.github_access_token is not None,
     )
 
 
