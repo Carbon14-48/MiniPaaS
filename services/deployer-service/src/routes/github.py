@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Header
+from fastapi import APIRouter, Query, Header, HTTPException
 from typing import Optional
 from pydantic import BaseModel
 import httpx
@@ -29,11 +29,10 @@ class BranchResponse(BaseModel):
 
 def get_token_from_header(authorization: str) -> str:
     if not authorization:
-        raise ValueError("Missing Authorization header")
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise ValueError("Invalid Authorization header format")
-    return parts[1]
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+    return authorization[7:].strip()
 
 
 async def get_github_token(minipaas_token: str) -> str:
@@ -47,14 +46,16 @@ async def get_github_token(minipaas_token: str) -> str:
                 data = response.json()
                 github_token = data.get("github_token")
                 if not github_token:
-                    raise ValueError("No GitHub token found. Please login with GitHub OAuth first.")
+                    raise HTTPException(status_code=401, detail="No GitHub token found. Please login with GitHub OAuth first.")
                 return github_token
             else:
-                raise ValueError(f"Failed to get GitHub token: {response.status_code}")
+                raise HTTPException(status_code=response.status_code, detail=f"Failed to get GitHub token")
         except httpx.ConnectError:
-            raise RuntimeError("Auth service unreachable")
+            raise HTTPException(status_code=503, detail="Auth service unreachable")
+        except HTTPException:
+            raise
         except Exception as e:
-            raise RuntimeError(f"Failed to get GitHub token: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to get GitHub token: {str(e)}")
 
 
 @router.get("/", response_model=list[RepoResponse])
