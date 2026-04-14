@@ -101,8 +101,11 @@ export default function DeploymentCard({
       </div>
 
       {deployment.error_message && (
-        <div className="mt-3 p-2 bg-red-900/50 rounded text-red-300 text-sm">
-          {deployment.error_message}
+        <div className="mt-3 p-3 bg-red-900/50 rounded text-red-300 text-sm">
+          <div className="font-semibold mb-1">
+            {deployment.status === 'blocked' ? 'Blocked by Security Scanner' : 'Error'}
+          </div>
+          <div className="text-xs">{deployment.error_message}</div>
         </div>
       )}
 

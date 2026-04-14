@@ -56,14 +56,30 @@ export default function NewDeployment() {
     try {
       setDeploying(true);
       setError(null);
-      await deployerApiService.createDeployment(accessToken, {
+      const deployment = await deployerApiService.createDeployment(accessToken, {
         repo_url: repoUrl,
         branch: branch,
         app_name: appName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
       });
-      navigate(`/deployments`);
+      
+      // Show result before navigating
+      if (deployment.status === 'blocked') {
+        setError(deployment.error_message || 'Deployment blocked by security scanner');
+        setDeploying(false);
+      } else if (deployment.status === 'failed') {
+        setError(deployment.error_message || 'Deployment failed');
+        setDeploying(false);
+      } else {
+        navigate(`/deployments`);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to create deployment');
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to create deployment';
+      // Handle nested error messages
+      if (typeof errorMsg === 'object') {
+        setError(JSON.stringify(errorMsg));
+      } else {
+        setError(errorMsg);
+      }
       console.error(err);
     } finally {
       setDeploying(false);

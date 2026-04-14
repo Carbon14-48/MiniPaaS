@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { deployerApiService, Deployment } from '../lib/api';
 import DeploymentCard from '../components/ui/DeploymentCard';
@@ -11,25 +11,36 @@ export default function Deployments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLogs, setSelectedLogs] = useState<{ logs: string; source: string } | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  useEffect(() => {
-    loadDeployments();
-  }, [accessToken]);
-
-  const loadDeployments = async () => {
+  const loadDeployments = useCallback(async () => {
     if (!accessToken) return;
     try {
-      setLoading(true);
-      setError(null);
       const data = await deployerApiService.getDeployments(accessToken);
       setDeployments(data.deployments);
-    } catch (err) {
-      setError('Failed to load deployments');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      setError(null);
+      setLastRefresh(new Date());
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        setError('Session expired. Please login again.');
+      } else {
+        console.error(err);
+      }
     }
-  };
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    setLoading(true);
+    loadDeployments().finally(() => setLoading(false));
+    
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(() => {
+      loadDeployments();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [accessToken, loadDeployments]);
 
   const handleStop = async (id: string) => {
     if (!accessToken) return;
@@ -89,6 +100,7 @@ export default function Deployments() {
 
   const runningCount = deployments.filter((d) => d.status === 'running').length;
   const stoppedCount = deployments.filter((d) => d.status === 'stopped').length;
+  const failedCount = deployments.filter((d) => d.status === 'failed' || d.status === 'blocked').length;
   const buildingCount = deployments.filter((d) => d.status === 'building' || d.status === 'deploying').length;
 
   return (
@@ -103,6 +115,15 @@ export default function Deployments() {
               <Link to="/repos" className="text-gray-300 hover:text-white transition">Repositories</Link>
             </div>
           </div>
+          <button
+            onClick={() => loadDeployments()}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
         </div>
       </nav>
 
@@ -110,7 +131,9 @@ export default function Deployments() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">Your Deployments</h1>
-            <p className="text-gray-400 mt-1">Manage your running and stopped deployments</p>
+            <p className="text-gray-400 mt-1 text-sm">
+              Auto-refreshes every 5 seconds • Last: {lastRefresh.toLocaleTimeString()}
+            </p>
           </div>
           <Link
             to="/repos"
@@ -120,7 +143,7 @@ export default function Deployments() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="text-2xl font-bold text-green-400">{runningCount}</div>
             <div className="text-gray-400">Running</div>
@@ -128,6 +151,10 @@ export default function Deployments() {
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="text-2xl font-bold text-yellow-400">{buildingCount}</div>
             <div className="text-gray-400">Building</div>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="text-2xl font-bold text-red-400">{failedCount}</div>
+            <div className="text-gray-400">Failed/Blocked</div>
           </div>
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="text-2xl font-bold text-gray-400">{stoppedCount}</div>
@@ -138,6 +165,12 @@ export default function Deployments() {
         {error && (
           <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
             {error}
+            <button
+              onClick={() => window.location.href = '/'}
+              className="ml-4 underline hover:no-underline"
+            >
+              Go to Login
+            </button>
           </div>
         )}
 
