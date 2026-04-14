@@ -13,9 +13,6 @@ rule bash_reverse_shell_classic {
     strings:
         $s1 = "bash -i" ascii
         $s2 = "/dev/tcp/" ascii
-        $s3 = "0>&1" ascii
-        $s4 = "1>&1" ascii
-        $s5 = ">&1" ascii
     condition:
         $s1 and $s2
 }

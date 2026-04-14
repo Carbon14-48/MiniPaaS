@@ -7,6 +7,20 @@ from src.config import settings
 import httpx
 import jwt
 from datetime import datetime, timedelta
+import asyncio
+
+
+async def retry_request(coro_func, max_retries: int = 3, delay: float = 1.0):
+    """Retry an async HTTP call with exponential backoff."""
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            return await coro_func()
+        except (httpx.ConnectTimeout, httpx.ConnectError, httpx.TimeoutException) as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                await asyncio.sleep(delay * (2 ** attempt))
+    raise last_error
 
 
 def hash_password(password: str) -> str:
@@ -70,49 +84,55 @@ def get_github_auth_url() -> str:
 
 
 async def exchange_github_code(code: str) -> Optional[dict]:
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://github.com/login/oauth/access_token",
-            json={
-                "client_id": settings.GITHUB_CLIENT_ID,
-                "client_secret": settings.GITHUB_CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": settings.GITHUB_REDIRECT_URI,
-            },
-            headers={"Accept": "application/json"},
-        )
-        if response.status_code != 200:
-            return None
-        data = response.json()
-        if "access_token" not in data:
-            return None
-        return data
+    async def _do_request():
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://github.com/login/oauth/access_token",
+                json={
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": settings.GITHUB_REDIRECT_URI,
+                },
+                headers={"Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            data = response.json()
+            if "access_token" not in data:
+                return None
+            return data
+    return await retry_request(_do_request)
 
 
 async def get_github_user(access_token: str) -> Optional[dict]:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            "https://api.github.com/user",
-            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
-        )
-        if response.status_code != 200:
-            return None
-        return response.json()
+    async def _do_request():
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            return response.json()
+    return await retry_request(_do_request)
 
 
 async def get_github_email(access_token: str) -> Optional[str]:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            "https://api.github.com/user/emails",
-            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
-        )
-        if response.status_code != 200:
+    async def _do_request():
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                "https://api.github.com/user/emails",
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+            )
+            if response.status_code != 200:
+                return None
+            emails = response.json()
+            for email_data in emails:
+                if email_data.get("primary") and email_data.get("verified"):
+                    return email_data.get("email")
             return None
-        emails = response.json()
-        for email_data in emails:
-            if email_data.get("primary") and email_data.get("verified"):
-                return email_data.get("email")
-        return None
+    return await retry_request(_do_request)
 
 
 class UserService:

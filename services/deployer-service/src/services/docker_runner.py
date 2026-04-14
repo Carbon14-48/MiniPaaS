@@ -63,13 +63,24 @@ class DockerRunner:
             for key, value in env_vars.items():
                 env.append(f"{key}={value}")
         
+        registry_url = "localhost:5000"
+        registry_image = f"{registry_url}/{image_tag}"
+        
         try:
             self.client.images.get(image_tag)
+            logger.info(f"Image {image_tag} found locally")
+            run_image = image_tag
         except NotFound:
-            raise ValueError(f"Image {image_tag} not found locally. Please pull it first.")
+            try:
+                logger.info(f"Image {image_tag} not found locally, pulling from registry {registry_image}")
+                self.client.images.pull(registry_image)
+                run_image = registry_image
+            except DockerException as e:
+                logger.warning(f"Could not pull {registry_image}, trying {image_tag}")
+                raise ValueError(f"Image {image_tag} not found. Registry pull failed: {e}")
 
         container = self.client.containers.run(
-            image=image_tag,
+            image=run_image,
             name=container_name,
             detach=True,
             ports={

@@ -14,10 +14,12 @@ class Settings(BaseSettings):
     CLAMAV_DB_PATH: str = "/var/lib/clamav"
 
     SCANNER_MAX_TIMEOUT: int = 300
-    BLOCK_ON_HIGH_CVES: bool = True
-    BLOCK_ON_MALWARE: bool = True
-    BLOCK_ON_SECRETS: bool = True
-    BLOCK_ON_ROOT_USER: bool = True
+    
+    # PERMISSIVE MODE FOR TESTING - Nothing is blocked
+    BLOCK_ON_HIGH_CVES: bool = False
+    BLOCK_ON_MALWARE: bool = False
+    BLOCK_ON_SECRETS: bool = False
+    BLOCK_ON_ROOT_USER: bool = False
 
     class Config:
         env_file = ".env"

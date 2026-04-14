@@ -8,10 +8,10 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Host du registry local SANS http:// — utilisé pour docker tag/push
-    registry_host: str = "registry:5000"
+    registry_host: str = "localhost:5000"
 
     # URL complète du registry — utilisée pour les health checks HTTP
-    registry_url: str = "http://registry:5000"
+    registry_url: str = "http://localhost:5000"
 
     # Base de données propre au registry-service
     database_url: str = "postgresql://registryuser:registrypass@registry-db:5432/registrydb"

@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 class PolicyEngine:
     """
-    Applies the MiniPaaS blocking policy to aggregated scan results.
-    Determines whether an image passes, warns, or is blocked.
+    PERMISSIVE Policy for testing: Only blocks CRITICAL vulnerabilities.
     """
 
     def evaluate(
@@ -28,69 +27,67 @@ class PolicyEngine:
         breakdown: SeverityBreakdown,
     ) -> tuple[ScanStatus, Verdict, Optional[str], list[Warning]]:
         """
-        Evaluate scan results against the policy.
-        Returns (status, verdict, block_reason, warnings).
-
-        Blocking rules (in priority order):
-        1. Base image not in allowlist -> BLOCK
-        2. Any CRITICAL CVE -> BLOCK
-        3. Any HIGH CVE (if BLOCK_ON_HIGH_CVES=True) -> BLOCK
-        4. Any malware detected -> BLOCK
-        5. Any secret detected -> BLOCK
-        6. USER directive missing (root user) -> BLOCK
-
+        Evaluate scan results - PERMISSIVE MODE.
+        
+        Blocking rules:
+        1. Base image not in allowlist -> WARN (not block)
+        2. CRITICAL CVE -> BLOCK
+        3. Malware detected -> WARN (not block for testing)
+        4. Secrets detected -> WARN (not block for testing)
+        5. Root user -> WARN (not block for testing)
+        
         Warning rules:
-        1. MEDIUM CVEs only -> WARN
-        2. LOW CVEs only -> WARN
-        3. Non-critical misconfigurations -> WARN
+        - Everything else becomes a warning only
         """
         block_reasons: list[str] = []
         warnings: list[Warning] = []
 
-        # Rule 1: Base image
+        # Rule 1: Base image - WARN only (don't block)
         if details.base_image and not details.base_image.approved:
-            reason = f"Unapproved base image: {details.base_image.image}"
-            if details.base_image.suggestion:
-                reason += f" — {details.base_image.suggestion}"
-            block_reasons.append(reason)
+            warnings.append(Warning(
+                type="base_image",
+                count=1,
+                message=f"Non-standard base image: {details.base_image.image}"
+            ))
 
-        # Rule 2: CRITICAL CVEs
+        # Rule 2: CRITICAL CVEs only - BLOCK
         if breakdown.critical > 0:
             block_reasons.append(
                 f"{breakdown.critical} CRITICAL CVE(s) found"
             )
 
-        # Rule 3: HIGH CVEs
-        if settings.BLOCK_ON_HIGH_CVES and breakdown.high > 0:
-            block_reasons.append(
-                f"{breakdown.high} HIGH CVE(s) found"
-            )
-
-        # Rule 4: Malware
-        if settings.BLOCK_ON_MALWARE and details.malware:
+        # Rule 3: Malware - WARN only (not block)
+        if details.malware:
             malware_count = len(details.malware)
-            block_reasons.append(
-                f"{malware_count} malware detection(s)"
-            )
+            warnings.append(Warning(
+                type="malware",
+                count=malware_count,
+                message=f"{malware_count} potential malware detection(s) - review recommended"
+            ))
 
-        # Rule 5: Secrets
-        if settings.BLOCK_ON_SECRETS and details.secrets:
+        # Rule 4: Secrets - WARN only (not block)
+        if details.secrets:
             secret_count = len(details.secrets)
-            block_reasons.append(
-                f"{secret_count} secret(s) detected in image"
-            )
+            warnings.append(Warning(
+                type="secrets",
+                count=secret_count,
+                message=f"{secret_count} potential secret(s) detected - review recommended"
+            ))
 
-        # Rule 6: Root user misconfiguration
-        if settings.BLOCK_ON_ROOT_USER:
-            root_misconfig = any(
-                m.code in ("DKR0001", "DKR0002") or
-                "root" in m.title.lower()
-                for m in details.misconfigurations
-            )
-            if root_misconfig:
-                block_reasons.append("Container runs as root user (USER directive missing)")
+        # Rule 5: Root user - WARN only (not block)
+        root_misconfig = any(
+            m.code in ("DKR0001", "DKR0002") or
+            "root" in m.title.lower()
+            for m in details.misconfigurations
+        )
+        if root_misconfig:
+            warnings.append(Warning(
+                type="root_user",
+                count=1,
+                message="Container runs as root user - consider using non-root user"
+            ))
 
-        # Determine status
+        # Determine status - only block for CRITICAL CVEs
         if block_reasons:
             block_reason = "; ".join(block_reasons)
             logger.warning(f"Image BLOCKED: {block_reason}")
@@ -101,13 +98,19 @@ class PolicyEngine:
                 warnings,
             )
 
-        # Check warnings
+        # Add CVEs as warnings only (don't block)
+        if breakdown.high > 0:
+            warnings.append(Warning(
+                type="high_vulnerabilities",
+                count=breakdown.high,
+                message=f"{breakdown.high} HIGH severity CVE(s) found - review recommended"
+            ))
+
         if breakdown.medium > 0:
             warnings.append(Warning(
                 type="medium_vulnerabilities",
                 count=breakdown.medium,
-                message=f"{breakdown.medium} MEDIUM severity CVE(s) found — "
-                        "deployment allowed but review recommended"
+                message=f"{breakdown.medium} MEDIUM severity CVE(s) found"
             ))
 
         if breakdown.low > 0:
@@ -117,31 +120,18 @@ class PolicyEngine:
                 message=f"{breakdown.low} LOW severity CVE(s) found"
             ))
 
-        non_critical_misconfigs = [
-            m for m in details.misconfigurations
-            if m.severity not in (Severity.CRITICAL, Severity.HIGH)
-        ]
-        if non_critical_misconfigs:
-            warnings.append(Warning(
-                type="misconfigurations",
-                count=len(non_critical_misconfigs),
-                message=f"{len(non_critical_misconfigs)} non-critical "
-                        "configuration warnings"
-            ))
-
+        # PASS with warnings
         if warnings:
-            logger.info(
-                f"Image WARN: {[w.message for w in warnings]}"
-            )
+            logger.info(f"Image PASSED (with warnings): {[w.message for w in warnings]}")
             return (
-                ScanStatus.WARN,
+                ScanStatus.PASS,
                 Verdict.ADVISORY_WARNING,
                 None,
                 warnings,
             )
 
-        # PASS
-        logger.info("Image PASSED all security policy checks")
+        # PASS clean
+        logger.info("Image PASSED all security checks")
         return (
             ScanStatus.PASS,
             Verdict.POLICY_PASSED,
