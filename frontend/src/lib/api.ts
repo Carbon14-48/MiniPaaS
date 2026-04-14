@@ -7,7 +7,7 @@ import type {
 } from '../types/auth';
 
 const API_BASE = 'http://localhost:8001';
-const DEPLOYER_BASE = 'http://localhost:8008';
+const DEPLOYER_BASE = '';  // Use Vite proxy to avoid CORS issues
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -105,6 +105,7 @@ export const deployerApiService = {
   getRepos: async (accessToken: string): Promise<GitHubRepo[]> => {
     const response = await deployerApi.get<GitHubRepo[]>('/repos/', {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -112,6 +113,7 @@ export const deployerApiService = {
   getBranches: async (accessToken: string, owner: string, repo: string): Promise<GitHubBranch[]> => {
     const response = await deployerApi.get<GitHubBranch[]>(`/repos/${owner}/${repo}/branches`, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -119,6 +121,7 @@ export const deployerApiService = {
   getDeployments: async (accessToken: string): Promise<{ deployments: Deployment[]; total: number }> => {
     const response = await deployerApi.get<{ deployments: Deployment[]; total: number }>('/deployments/', {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -126,6 +129,7 @@ export const deployerApiService = {
   getDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
     const response = await deployerApi.get<Deployment>(`/deployments/${id}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -136,6 +140,7 @@ export const deployerApiService = {
   ): Promise<Deployment> => {
     const response = await deployerApi.post<Deployment>('/deployments/', data, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -143,6 +148,7 @@ export const deployerApiService = {
   stopDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
     const response = await deployerApi.post<Deployment>(`/deployments/${id}/stop`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -150,6 +156,7 @@ export const deployerApiService = {
   startDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
     const response = await deployerApi.post<Deployment>(`/deployments/${id}/start`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -157,6 +164,7 @@ export const deployerApiService = {
   restartDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
     const response = await deployerApi.post<Deployment>(`/deployments/${id}/restart`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -164,6 +172,7 @@ export const deployerApiService = {
   deleteDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
     const response = await deployerApi.delete<Deployment>(`/deployments/${id}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      withCredentials: true,
     });
     return response.data;
   },
@@ -171,7 +180,7 @@ export const deployerApiService = {
   getDeploymentLogs: async (accessToken: string, id: string, tail = 100): Promise<{ logs: string; source: string }> => {
     const response = await deployerApi.get<{ logs: string; source: string }>(
       `/deployments/${id}/logs?tail=${tail}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
+      { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
     );
     return response.data;
   },
