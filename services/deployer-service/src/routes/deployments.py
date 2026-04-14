@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
+import logging
 
 from ..db import get_db
 from ..models.deployment import Deployment, DeploymentStatus
@@ -11,6 +12,7 @@ from ..services.build_client import trigger_build, get_build_status
 from ..services.docker_runner import docker_runner
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
+logger = logging.getLogger(__name__)
 
 
 class DeploymentCreate(BaseModel):
@@ -33,6 +35,7 @@ class DeploymentResponse(BaseModel):
     container_url: Optional[str] = None
     host_port: Optional[int] = None
     error_message: Optional[str] = None
+    build_logs: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     started_at: Optional[datetime] = None
@@ -46,17 +49,39 @@ class DeploymentListResponse(BaseModel):
     total: int
 
 
+def _serialize_deployment(deployment: Deployment) -> dict:
+    """Serialize deployment ensuring status is a string."""
+    return {
+        "id": deployment.id,
+        "user_id": deployment.user_id,
+        "app_name": deployment.app_name,
+        "repo_url": deployment.repo_url,
+        "branch": deployment.branch,
+        "status": deployment.status.value if hasattr(deployment.status, 'value') else str(deployment.status),
+        "build_job_id": deployment.build_job_id,
+        "image_tag": deployment.image_tag,
+        "image_url": deployment.image_url,
+        "container_id": deployment.container_id,
+        "container_url": deployment.container_url,
+        "host_port": deployment.host_port,
+        "error_message": deployment.error_message,
+        "build_logs": deployment.build_logs,
+        "created_at": deployment.created_at,
+        "updated_at": deployment.updated_at,
+        "started_at": deployment.started_at,
+    }
+
+
 async def get_current_user_id(token: str) -> int:
     return await verify_token(token)
 
 
 def get_token_from_header(authorization: str) -> str:
     if not authorization:
-        raise ValueError("Missing Authorization header")
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise ValueError("Invalid Authorization header format")
-    return parts[1]
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+    return authorization[7:].strip()
 
 
 @router.post("/", response_model=DeploymentResponse, status_code=201)
@@ -65,8 +90,14 @@ async def create_deployment(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    token = get_token_from_header(authorization)
-    user_id = await get_current_user_id(token)
+    try:
+        token = get_token_from_header(authorization)
+        user_id = await get_current_user_id(token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auth error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
     
     deployment = Deployment(
         user_id=user_id,
@@ -96,15 +127,21 @@ async def create_deployment(
         
         if build_status == "blocked":
             deployment.status = DeploymentStatus.BLOCKED
+            scan_result = build_result.get("scan_result", {})
+            severity = scan_result.get("severity_breakdown", {})
+            critical = severity.get("critical", 0)
+            high = severity.get("high", 0)
             deployment.error_message = build_result.get("reason", "Security scan blocked this build")
+            if critical > 0 or high > 0:
+                deployment.error_message = f"Security scan blocked: {critical} CRITICAL, {high} HIGH vulnerabilities found"
             db.commit()
-            return deployment
+            return _serialize_deployment(deployment)
         
         if build_status == "failed":
             deployment.status = DeploymentStatus.FAILED
-            deployment.error_message = "Build failed"
+            deployment.error_message = build_result.get("reason", "Build failed")
             db.commit()
-            return deployment
+            return _serialize_deployment(deployment)
         
         if deployment.image_tag:
             try:
@@ -124,13 +161,16 @@ async def create_deployment(
                 deployment.error_message = f"Container start failed: {str(e)}"
         
         db.commit()
-        return deployment
+        return _serialize_deployment(deployment)
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Build error: {e}")
         deployment.status = DeploymentStatus.FAILED
         deployment.error_message = str(e)
         db.commit()
-        return deployment
+        return _serialize_deployment(deployment)
 
 
 @router.get("/", response_model=DeploymentListResponse)
@@ -138,18 +178,28 @@ async def list_deployments(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
-    token = get_token_from_header(authorization)
-    user_id = await get_current_user_id(token)
+    try:
+        token = get_token_from_header(authorization)
+        user_id = await get_current_user_id(token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auth error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
     
-    deployments = db.query(Deployment).filter(
-        Deployment.user_id == user_id,
-        Deployment.is_active == True
-    ).order_by(Deployment.created_at.desc()).all()
-    
-    return DeploymentListResponse(
-        deployments=deployments,
-        total=len(deployments)
-    )
+    try:
+        deployments = db.query(Deployment).filter(
+            Deployment.user_id == user_id,
+            Deployment.is_active == True
+        ).order_by(Deployment.created_at.desc()).all()
+        
+        return DeploymentListResponse(
+            deployments=[_serialize_deployment(d) for d in deployments],
+            total=len(deployments)
+        )
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch deployments")
 
 
 @router.get("/{deployment_id}", response_model=DeploymentResponse)
