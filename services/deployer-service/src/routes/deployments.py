@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from datetime import datetime
 from pydantic import BaseModel
@@ -62,7 +62,7 @@ def get_token_from_header(authorization: str) -> str:
 @router.post("/", response_model=DeploymentResponse, status_code=201)
 async def create_deployment(
     deployment_req: DeploymentCreate,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -135,7 +135,7 @@ async def create_deployment(
 
 @router.get("/", response_model=DeploymentListResponse)
 async def list_deployments(
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -155,7 +155,7 @@ async def list_deployments(
 @router.get("/{deployment_id}", response_model=DeploymentResponse)
 async def get_deployment(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -189,7 +189,7 @@ async def get_deployment(
 @router.delete("/{deployment_id}", response_model=DeploymentResponse)
 async def delete_deployment(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -222,7 +222,7 @@ async def delete_deployment(
 @router.post("/{deployment_id}/stop", response_model=DeploymentResponse)
 async def stop_deployment(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -253,7 +253,7 @@ async def stop_deployment(
 @router.post("/{deployment_id}/start", response_model=DeploymentResponse)
 async def start_deployment(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
@@ -301,7 +301,7 @@ async def start_deployment(
 @router.get("/{deployment_id}/logs")
 async def get_deployment_logs(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     tail: int = 100,
     db: Session = Depends(get_db)
 ):
@@ -330,7 +330,7 @@ async def get_deployment_logs(
 @router.post("/{deployment_id}/restart", response_model=DeploymentResponse)
 async def restart_deployment(
     deployment_id: str,
-    authorization: str,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     token = get_token_from_header(authorization)
