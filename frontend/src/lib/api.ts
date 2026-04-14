@@ -8,6 +8,17 @@ import type {
 
 const API_BASE = 'http://localhost:8001';
 const DEPLOYER_BASE = '';  // Use Vite proxy to avoid CORS issues
+const TOKEN_KEY = 'minipaas_access_token';
+
+let refreshTokenFn: (() => Promise<boolean>) | null = null;
+
+export const setTokenRefreshFn = (fn: () => Promise<boolean>) => {
+  refreshTokenFn = fn;
+};
+
+const getToken = (): string | null => {
+  return localStorage.getItem(TOKEN_KEY);
+};
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -22,6 +33,60 @@ const deployerApi = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add interceptor to deployerApi that handles 401 refresh
+deployerApi.interceptors.request.use(
+  (config) => {
+    // Only add token if not already set by the API call
+    if (!config.headers.Authorization && !config.headers.authorization) {
+      const token = getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle 401 and refresh token
+deployerApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && !originalRequest._retry && refreshTokenFn) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshed = await refreshTokenFn();
+        if (refreshed) {
+          const newToken = getToken();
+          if (newToken) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return deployerApi(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Same interceptor for auth API
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export const authApi = {
   register: async (data: RegisterRequest): Promise<TokenResponse> => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { User, TokenResponse } from '../types/auth';
 import { authApi } from '../lib/api';
 
@@ -12,10 +12,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
-  refreshAccessToken: () => Promise<void>;
+  refreshAccessToken: () => Promise<boolean>;
   clearError: () => void;
   fetchUser: () => Promise<void>;
   completeGitHubLogin: (code: string) => Promise<void>;
+  onTokenRefresh: (callback: (token: string) => void) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,8 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [refreshToken, setRefreshToken] = useState<string | null>(() => localStorage.getItem(REFRESH_KEY));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const refreshCallbacksRef = useRef<((token: string) => void)[]>([]);
 
   const isAuthenticated = !!accessToken;
+
+  const notifyTokenRefresh = useCallback((token: string) => {
+    refreshCallbacksRef.current.forEach(cb => cb(token));
+  }, []);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -96,18 +102,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(REFRESH_KEY);
   };
 
-  const refreshAccessToken = async () => {
+  const onTokenRefresh = (callback: (token: string) => void) => {
+    refreshCallbacksRef.current.push(callback);
+  };
+
+  const refreshAccessToken = async (): Promise<boolean> => {
     if (!refreshToken) {
       logout();
-      return;
+      return false;
     }
     try {
       const tokens = await authApi.refreshToken(refreshToken);
       setTokens(tokens);
+      notifyTokenRefresh(tokens.access_token);
       const userData = await authApi.getMe(tokens.access_token);
       setUser(userData);
+      return true;
     } catch {
       logout();
+      return false;
     }
   };
 
@@ -153,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearError,
         fetchUser,
         completeGitHubLogin,
+        onTokenRefresh,
       }}
     >
       {children}

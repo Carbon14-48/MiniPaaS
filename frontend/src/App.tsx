@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { setTokenRefreshFn } from './lib/api';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -8,10 +9,21 @@ import GitHubCallback from './pages/GitHubCallback';
 import Deployments from './pages/Deployments';
 import Repositories from './pages/Repositories';
 import NewDeployment from './pages/NewDeployment';
+import { useEffect } from 'react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+}
+
+function TokenSetup() {
+  const { refreshAccessToken } = useAuth();
+  
+  useEffect(() => {
+    setTokenRefreshFn(refreshAccessToken);
+  }, [refreshAccessToken]);
+  
+  return null;
 }
 
 function AppRoutes() {
@@ -61,6 +73,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <TokenSetup />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

@@ -3,10 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { deployerApiService, Deployment } from '../lib/api';
 import DeploymentCard from '../components/ui/DeploymentCard';
 import LogViewer from '../components/ui/LogViewer';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Deployments() {
-  const { accessToken } = useAuth();
+  const { accessToken, logout } = useAuth();
+  const navigate = useNavigate();
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +22,17 @@ export default function Deployments() {
       setError(null);
       setLastRefresh(new Date());
     } catch (err: any) {
-      if (err?.response?.status === 401) {
+      if (err?.response?.status === 401 || err?.status === 401) {
         setError('Session expired. Please login again.');
+        setTimeout(() => {
+          logout();
+          navigate('/login');
+        }, 2000);
       } else {
         console.error(err);
       }
     }
-  }, [accessToken]);
+  }, [accessToken, logout, navigate]);
 
   useEffect(() => {
     if (!accessToken) return;
