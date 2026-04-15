@@ -5,6 +5,7 @@ MiniPaaS auth microservice for:
 - GitHub OAuth login
 - JWT access + refresh token issuance
 - Current-user introspection (`/auth/me`)
+- GitHub OAuth token retrieval for service-to-service communication
 
 ## Current Endpoints
 
@@ -15,6 +16,7 @@ MiniPaaS auth microservice for:
 | `GET` | `/auth/github` | Generate GitHub OAuth authorize URL |
 | `GET` | `/auth/callback?code=...` | Exchange GitHub OAuth code for tokens |
 | `GET` | `/auth/me` | Get current user from access token |
+| `GET` | `/auth/github-token` | Get stored GitHub OAuth token (for service-to-service) |
 | `POST` | `/auth/refresh` | Rotate/refresh access + refresh tokens |
 | `GET` | `/health/` | Health check |
 
@@ -37,7 +39,28 @@ MiniPaaS auth microservice for:
 4. Frontend calls `GET /auth/callback?code=...`.
 5. Service returns bearer tokens.
 
-### 3) Protected Route
+### 3) GitHub Token for Service-to-Service
+
+Other services (like deployer-service) need the GitHub OAuth token to access repositories:
+
+```http
+GET /auth/github-token
+Authorization: Bearer <access_token>
+```
+
+Response:
+```json
+{
+  "github_token": "gho_xxxxxxxxxxxx"
+}
+```
+
+This endpoint is used by the deployer-service to:
+- List user's GitHub repositories
+- Get repository branches
+- Clone repositories for building
+
+### 4) Protected Route
 
 Use access token in header:
 
@@ -45,7 +68,7 @@ Use access token in header:
 Authorization: Bearer <access_token>
 ```
 
-### 4) Refresh Tokens
+### 5) Refresh Tokens
 
 Send refresh token to rotate both tokens:
 

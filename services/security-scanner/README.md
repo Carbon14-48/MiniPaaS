@@ -1,9 +1,19 @@
-# Security Scanner — Implementation Plan
+# Security Scanner — MiniPaaS Security Analysis Service
 
-> **Status:** READY FOR IMPLEMENTATION
-> **Current state:** Stub service — returns mock scan results
-> **Target state:** Full multi-layer image security scanner
-> **Next iteration:** Full rewrite of this service
+> **Status:** ✅ PRODUCTION READY
+> **Current state:** Fully implemented multi-layer image security scanner
+> **Policy:** Permissive mode (blocks CRITICAL CVEs only, warns on others)
+
+## Quick Summary
+
+The Security Scanner performs comprehensive analysis of Docker images before deployment:
+- **Trivy** for CVE detection
+- **ClamAV** for malware detection
+- **YARA Rules** for custom threat patterns
+- **TruffleHog** for secrets detection
+- **Dockle** for CIS benchmark compliance
+
+**Endpoint:** `POST /scans/image`
 
 ---
 

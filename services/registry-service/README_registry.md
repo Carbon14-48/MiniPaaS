@@ -1,5 +1,41 @@
 # Registry Service — MiniPaaS
 
+## English Summary
+
+The **Registry Service** is responsible for storing, managing, and exposing Docker images produced by the Build Service. It bridges the build pipeline and the deployment pipeline.
+
+### Key Responsibilities
+- Tag Docker images with proper naming conventions
+- Push images to the local Docker registry
+- Store image metadata in PostgreSQL
+- Clean up local Docker daemon images after push
+- Provide image information to other services
+
+### Architecture Flow
+```
+Build Service → Security Scan OK → POST /push → Registry Service → Docker Push → registry:5000
+                                                            ↓
+                                                     Store metadata in PostgreSQL
+                                                            ↓
+                                                     Return URL + digest to Build Service
+```
+
+### Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/push` | Tag and push image to registry |
+| `GET` | `/images/{user_id}` | List user's images |
+| `GET` | `/images/tag/{tag}` | Get image by tag |
+| `GET` | `/images/{digest}` | Get image by digest |
+| `DELETE` | `/images/{digest}` | Soft-delete image |
+| `GET` | `/health` | Health check |
+
+---
+
+*For detailed documentation, see below (in French).*
+
+---
+
 Le **Registry Service** est le microservice responsable de stocker, gérer et
 exposer les images Docker produites par le Build Service.
 Il fait le pont entre le pipeline de build et le pipeline de déploiement.
