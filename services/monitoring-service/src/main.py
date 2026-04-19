@@ -1,27 +1,57 @@
+"""
+main.py
+-------
+Point d'entrée du monitoring-service.
+
+Ce service est ENTIÈREMENT PASSIF vis-à-vis des autres microservices :
+  - Il n'appelle AUCUN autre service MiniPaaS (auth, build, registry, scanner)
+  - Il ne modifie RIEN dans les autres services
+  - Il observe uniquement le Docker daemon en lecture seule
+  - Les autres services n'ont PAS besoin de le connaître pour fonctionner
+
+Il peut donc être ajouté ou retiré sans impacter auth/build/registry/scanner.
+"""
+
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from src.db import engine, Base
 from src.config import settings
-from src.routes import health, logs, metrics
+from src.routes import metrics, logs, health
+from src.services.scheduler import start_scheduler, stop_scheduler
+
+# Import des modèles pour que SQLAlchemy les connaisse
+from src.models import metric, log_entry  # noqa: F401
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Gestion du cycle de vie de l'application.
+    Démarre le scheduler au lancement, l'arrête proprement à l'extinction.
+    """
+    # Startup
+    if settings.env == "development":
+        Base.metadata.create_all(bind=engine)
+
+    start_scheduler()
+
+    yield  # L'application tourne ici
+
+    # Shutdown
+    stop_scheduler()
+
 
 app = FastAPI(
-    title="Cloudoku Monitoring Service",
-    description="Collects logs, tracks metrics, and displays data in dashboard",
+    title="Monitoring Service — MiniPaaS",
+    description=(
+        "Collecte et expose les métriques et logs des applications déployées. "
+        "Expose /metrics au format Prometheus pour intégration Grafana."
+    ),
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(logs.router, prefix="/logs", tags=["logs"])
-app.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
-
-
-@app.get("/")
-async def root():
-    return {"service": "monitoring-service", "status": "running"}
+# Enregistrement des routes
+app.include_router(metrics.router)
+app.include_router(logs.router)
+app.include_router(health.router)

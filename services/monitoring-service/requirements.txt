@@ -1,9 +1,28 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-pydantic-settings==2.7.0
-requests==2.32.3
-python-dotenv==1.0.1
-pika==1.3.2
-pytest==8.3.4
-httpx==0.28.1
+# Web framework — même stack que les autres services
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Validation
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+
+# HTTP client
+httpx>=0.28.0
+
+# Docker SDK — pour lire stats et logs des containers
+docker>=7.1.0
+
+# Base de données — >= pour compatibilité Python 3.14
+sqlalchemy>=2.0.36
+alembic>=1.14.0
+psycopg2-binary>=2.9.10
+
+# Variables d'environnement
+python-dotenv>=1.0.1
+
+# Scheduling — pour collecter les métriques périodiquement
+apscheduler>=3.10.4
+
+# Tests
+pytest>=8.3.0
+pytest-asyncio>=0.24.0

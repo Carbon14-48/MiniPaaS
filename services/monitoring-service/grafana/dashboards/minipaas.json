@@ -1,0 +1,57 @@
+{
+  "title": "MiniPaaS — Container Monitoring",
+  "uid": "minipaas-monitoring",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Usage % par app",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "minipaas_container_cpu_percent",
+          "legendFormat": "{{app_id}} (user {{user_id}})"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Mémoire % par app",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "minipaas_container_memory_percent",
+          "legendFormat": "{{app_id}} (user {{user_id}})"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Mémoire utilisée (bytes) par app",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "minipaas_container_memory_usage_bytes",
+          "legendFormat": "{{app_id}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Réseau reçu (bytes) par app",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "minipaas_container_network_rx_bytes",
+          "legendFormat": "{{app_id}} RX"
+        }
+      ]
+    }
+  ]
+}
