@@ -4,8 +4,8 @@ from src.config import settings
 from src.routes import health, proxy
 
 app = FastAPI(
-    title="Cloudoku API Gateway",
-    description="Entry point for all Cloudoku client requests",
+    title="MiniPaaS API Gateway",
+    description="Unified entry point for all MiniPaaS services",
     version="1.0.0",
 )
 
@@ -18,9 +18,14 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(proxy.router, prefix="/api", tags=["api"])
+app.include_router(proxy.router, prefix="/api", tags=["proxy"])
 
 
 @app.get("/")
 async def root():
     return {"service": "api-gateway", "status": "running"}
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "api-gateway"}

@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Nombre de lignes max retournées pour les logs d'un container
     log_tail_lines: int = 100
 
+    # Auth service URL (pour vérification des tokens)
+    # Note: le port interne est 8000, pas 8001 (qui est le port hôte)
+    auth_service_url: str = "http://auth-service:8000"
+
     # Environnement
     env: str = "development"
 

@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     HOST_PORT_RANGE_START: int = 30000
     HOST_PORT_RANGE_END: int = 40000
     
-    AUTH_SERVICE_URL: str = "http://auth-service:8001"
-    BUILD_SERVICE_URL: str = "http://build-service:8003"
-    REGISTRY_SERVICE_URL: str = "http://registry-service:8007"
+    AUTH_SERVICE_URL: str = "http://auth-service:8000"
+    BUILD_SERVICE_URL: str = "http://build-service:8002"
+    REGISTRY_SERVICE_URL: str = "http://registry-service:8005"
     
     DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
     

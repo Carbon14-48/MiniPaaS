@@ -6,8 +6,8 @@ import type {
   RegisterRequest,
 } from '../types/auth';
 
-const API_BASE = 'http://localhost:8001';
-const DEPLOYER_BASE = '';  // Use Vite proxy to avoid CORS issues
+const API_BASE = '';
+const DEPLOYER_BASE = '';
 const TOKEN_KEY = 'minipaas_access_token';
 
 let refreshTokenFn: (() => Promise<boolean>) | null = null;

@@ -10,6 +10,7 @@ from ..models.deployment import Deployment, DeploymentStatus
 from ..services.auth_client import verify_token
 from ..services.build_client import trigger_build, get_build_status
 from ..services.docker_runner import docker_runner
+from .github import get_github_token
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 logger = logging.getLogger(__name__)
@@ -111,11 +112,18 @@ async def create_deployment(
     db.refresh(deployment)
     
     try:
+        # Get GitHub token for cloning private repos
+        try:
+            github_token = await get_github_token(token)
+        except Exception:
+            github_token = None
+        
         build_result = await trigger_build(
             token=token,
             repo_url=deployment_req.repo_url,
             branch=deployment_req.branch,
-            app_name=deployment_req.app_name
+            app_name=deployment_req.app_name,
+            github_token=github_token
         )
         
         deployment.build_job_id = build_result.get("job_id")

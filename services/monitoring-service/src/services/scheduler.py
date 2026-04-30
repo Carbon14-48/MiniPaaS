@@ -116,6 +116,49 @@ def cleanup_old_metrics_job():
         db.close()
 
 
+def collect_logs_job():
+    """
+    Job de collecte des logs.
+    Collecte les logs de tous les containers monitorés et les stocke en DB.
+    """
+    client = get_docker_client()
+    if not client:
+        logger.warning("Collecte logs ignorée — Docker daemon injoignable")
+        return
+
+    containers = get_monitored_containers(client)
+    if not containers:
+        return
+
+    db = SessionLocal()
+    try:
+        for container in containers:
+            identity = parse_container_identity(container)
+            entries = collect_container_logs(container, tail=20)
+
+            for entry in entries:
+                log_entry = LogEntry(
+                    app_id=identity["app_id"],
+                    user_id=identity["user_id"],
+                    container_id=identity["container_id"],
+                    container_name=container.name.lstrip("/"),
+                    level=entry.get("level", "INFO"),
+                    message=entry.get("message", ""),
+                    log_timestamp=entry.get("log_timestamp"),
+                    collected_at=datetime.now(timezone.utc),
+                )
+                db.add(log_entry)
+
+        db.commit()
+        logger.debug(f"Logs collectées pour {len(containers)} container(s)")
+
+    except Exception as e:
+        logger.error(f"Erreur sauvegarde logs : {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def start_scheduler():
     """Démarre le scheduler en arrière-plan."""
     if _scheduler.running:
@@ -128,6 +171,15 @@ def start_scheduler():
         id="collect_metrics",
         replace_existing=True,
         max_instances=1,  # évite les exécutions parallèles
+    )
+
+    # Collecte des logs toutes les 30 secondes
+    _scheduler.add_job(
+        collect_logs_job,
+        trigger=IntervalTrigger(seconds=30),
+        id="collect_logs",
+        replace_existing=True,
+        max_instances=1,
     )
 
     # Nettoyage des vieilles métriques toutes les heures

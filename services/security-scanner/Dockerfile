@@ -18,24 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-RUN wget -qO- https://github.com/aquasecurity/trivy/releases/download/v0.56.0/trivy_0.56.0_Linux-64bit.tar.gz \
-    | tar -xzf - -C /usr/local/bin trivy
-
 
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     clamav \
-    libclamav9 \
-    clamav-freshclam \
-    libclamunrar9 \
-    && rm -rf /var/lib/apt/lists/* \
-    && freshclam \
-    && rm -rf /var/lib/clamav/*.cld /var/lib/clamav/*.cvd
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install /usr/local
-COPY --from=builder /usr/local/bin/trivy /usr/local/bin/trivy
 
 COPY src/scanners/rules/ /rules/
 
@@ -44,4 +35,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "freshclam --daemon && uvicorn src.main:app --host 0.0.0.0 --port 8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

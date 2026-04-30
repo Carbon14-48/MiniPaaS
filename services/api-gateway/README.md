@@ -1,76 +1,26 @@
 # API Gateway
 
-> **Status:** 🔧 STUB - NOT YET IMPLEMENTED
-> **Note:** Currently, the frontend connects directly to services. This gateway is a future enhancement for unified API entry point.
+> **Status:** ✅ FUNCTIONAL - Unified entry point for MiniPaaS
 
 ## Purpose
 
 The API Gateway serves as the unified entry point for all MiniPaaS client requests, providing:
 - Centralized routing to backend services
-- Rate limiting
-- Request/response transformation
-- Authentication middleware
-- Load balancing
+- Request/response proxy forwarding
+- Authentication middleware (JWT)
+- CORS support
 
-## Planned Endpoints
+## Implemented Routes
 
-| Method | Path | Target Service | Description |
-|--------|------|----------------|-------------|
-| `GET` | `/health` | - | Health check |
-| `GET` | `/api/apps` | app-management | List apps |
-| `POST` | `/api/apps` | app-management | Create app |
-| `GET` | `/api/apps/{id}` | app-management | Get app |
-| `DELETE` | `/api/apps/{id}` | app-management | Delete app |
-| `GET` | `/api/deployments` | deployer-service | List deployments |
-| `POST` | `/api/deployments` | deployer-service | Create deployment |
-| `GET` | `/api/deployments/{id}` | deployer-service | Get deployment |
-| `POST` | `/api/deployments/{id}/stop` | deployer-service | Stop deployment |
-| `POST` | `/api/deployments/{id}/start` | deployer-service | Start deployment |
-| `GET` | `/api/logs/{app_id}` | monitoring-service | Get logs |
-| `GET` | `/api/auth/*` | auth-service | Authentication routes |
-
-## Current Architecture
-
-```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
-       │
-       │ Direct connections (for now)
-       ▼
-┌─────────────┐     ┌─────────────┐
-│ Auth Service│     │Deployer Svc │
-│   (8001)  │     │   (8008)   │
-└─────────────┘     └─────────────┘
-```
-
-## Future Architecture
-
-```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ API Gateway │     ┌─────────────┐     ┌─────────────┐
-│   (8000)   │────►│ Auth Service│     │Deployer Svc │
-│            │     │   (8001)   │     │   (8008)   │
-│ Rate Limit │     └─────────────┘     └─────────────┘
-│ Auth Check │
-│  Routing   │     ┌─────────────┐     ┌─────────────┐
-└─────────────┘────►│ App Mgmt   │────►│Monitoring   │
-                    │   (8002)   │     │   (8005)   │
-                    └─────────────┘     └─────────────┘
-```
-
-## Implementation Requirements
-
-1. **Routing**: Proxy requests to appropriate backend services
-2. **Rate Limiting**: Implement per-user rate limits
-3. **Authentication**: Validate JWT tokens before proxying
-4. **Logging**: Log all requests for audit trail
-5. **CORS**: Handle cross-origin requests
+| Path | Target Service | Internal Port | Description |
+|------|----------------|---------------|-------------|
+| `/api/auth/*` | auth-service | 8000 | Authentication routes |
+| `/api/apps/*` | app-management | 8000 | App CRUD operations |
+| `/api/deployments/*` | deployer-service | 8000 | Deployment management |
+| `/api/builds/*` | build-service | 8002 | Build operations |
+| `/api/registry/*` | registry-service | 8005 | Registry operations |
+| `/api/monitoring/*` | monitoring-service | 8006 | Monitoring (logs, metrics, health) |
+| `/api/scanner/*` | security-scanner | 8000 | Security scanning |
 
 ## Running Locally
 
@@ -82,14 +32,71 @@ pip install -r requirements.txt
 uvicorn src.main:app --reload --port 8000
 ```
 
-## Future Enhancements
+## Docker
 
-- [ ] Implement proxy forwarding
-- [ ] Add rate limiting middleware
-- [ ] Add authentication middleware
-- [ ] Add request logging
-- [ ] Add response caching
-- [ ] Add circuit breaker pattern
+The gateway is automatically built and started via docker-compose:
+
+```bash
+docker compose up -d api-gateway
+```
+
+## Testing
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Proxy to auth service
+curl http://localhost:8000/api/auth/
+
+# Proxy to monitoring service
+curl http://localhost:8000/api/monitoring/health
+
+# Proxy to deployments
+curl http://localhost:8000/api/deployments/
+```
+
+## Architecture
+
+```
+                    ┌─────────────┐
+                    │   Client    │
+                    └──────┬──────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │   API Gateway :8000  │
+                │                     │
+                │  • Routing          │
+                │  • CORS             │
+                │  • Proxy Forward    │
+                └──────────┬──────────┘
+                           │
+      ┌───────────┬────────┼────────┬───────────┐
+      ▼           ▼        ▼        ▼           ▼
+┌──────────┐┌────────┐┌─────────┐┌─────────┐┌──────────┐
+│  Auth     ││ Deploy ││ Monitoring││ Registry ││  Build   │
+│ :8000     ││ :8000  ││  :8006   ││ :8005   ││  :8002   │
+└──────────┘└────────┘└──────────┘└─────────┘└──────────┘
+```
+
+## Environment Variables
+
+```env
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+
+# Service URLs (internal Docker)
+AUTH_SERVICE_URL=http://auth-service:8000
+APP_MANAGEMENT_SERVICE_URL=http://app-management:8000
+BUILD_SERVICE_URL=http://build-service:8002
+DEPLOYMENT_SERVICE_URL=http://deployment-service:8000
+DEPLOYER_SERVICE_URL=http://deployer-service:8000
+MONITORING_SERVICE_URL=http://monitoring-service:8006
+SECURITY_SCANNER_URL=http://security-scanner:8000
+REGISTRY_SERVICE_URL=http://registry-service:8005
+```
 
 ## Related Documentation
 

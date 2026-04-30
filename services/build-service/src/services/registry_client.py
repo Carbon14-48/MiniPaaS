@@ -58,16 +58,24 @@ async def push_image(image_tag: str, user_id: int, app_name: str) -> dict:
                     "app_name": app_name
                 }
             )
-            response.raise_for_status()
+            if response.status_code >= 400:
+                raise httpx.HTTPStatusError(
+                    message=f"HTTP {response.status_code}",
+                    request=response.request,
+                    response=response
+                )
     except httpx.ConnectError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Registry service injoignable"
         )
     except httpx.HTTPStatusError as e:
+        detail = f"Erreur lors du push : {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            detail += f" | Response: {e.response.text}"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors du push : {str(e)}"
+            detail=detail
         )
 
     return response.json()

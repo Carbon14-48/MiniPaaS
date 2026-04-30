@@ -14,15 +14,36 @@ Prometheus le scrape toutes les 15s et Grafana affiche les graphiques.
 
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from src.db import get_db
 from src.models.metric import ContainerMetric
+from src.services.auth_client import verify_token
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
+
+
+def get_current_user(authorization: str = Header(None)) -> Optional[int]:
+    if not authorization:
+        return None
+    if authorization.startswith("Bearer "):
+        authorization = authorization[7:]
+    try:
+        return verify_token(authorization)
+    except:
+        return None
+    if token.startswith("Bearer "):
+        token = token[7:]
+    try:
+        user_id = verify_token(token)
+        logger.info(f"metrics.py: get_current_user returning user_id={user_id}")
+        return user_id
+    except Exception as e:
+        logger.warning(f"metrics.py: get_current_user verify_token failed: {e}")
+        return None
 
 
 # ── GET /metrics/user/{user_id} ───────────────────────────────────────────────
@@ -33,12 +54,17 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 def get_user_metrics(
     user_id: int,
     minutes: int = 60,
+    current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Retourne les métriques récentes de toutes les apps d'un utilisateur.
     Paramètre minutes : fenêtre temporelle (défaut 60 minutes).
+    Un utilisateur ne peut voir que ses propres métriques.
     """
+    if current_user != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     metrics = db.query(ContainerMetric).filter(
@@ -52,33 +78,49 @@ def get_user_metrics(
 # ── GET /metrics/summary ──────────────────────────────────────────────────────
 
 @router.get("/summary")
-def get_metrics_summary(db: Session = Depends(get_db)):
+def get_metrics_summary(
+    current_user: Optional[int] = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Résumé agrégé : dernière valeur connue par app_id.
-    Utile pour un dashboard d'overview.
+    Si pas de user connecté, retourne toutes les apps système.
     """
-    since = datetime.now(timezone.utc) - timedelta(hours=1)
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
 
-    # Sous-requête : dernière collecte par app
-    subq = (
-        db.query(
-            ContainerMetric.app_id,
-            func.max(ContainerMetric.collected_at).label("latest")
+    # Si pas de user connecté, retourner tous les containers système
+    if current_user is None:
+        results = (
+            db.query(ContainerMetric)
+            .filter(ContainerMetric.collected_at >= since)
+            .order_by(ContainerMetric.app_id, ContainerMetric.collected_at.desc())
+            .distinct(ContainerMetric.app_id)
+            .limit(50)
+            .all()
         )
-        .filter(ContainerMetric.collected_at >= since)
-        .group_by(ContainerMetric.app_id)
-        .subquery()
-    )
+    else:
+        subq = (
+            db.query(
+                ContainerMetric.app_id,
+                func.max(ContainerMetric.collected_at).label("latest")
+            )
+            .filter(
+                ContainerMetric.collected_at >= since,
+                ContainerMetric.user_id == current_user
+            )
+            .group_by(ContainerMetric.app_id)
+            .subquery()
+        )
 
-    results = (
-        db.query(ContainerMetric)
-        .join(
-            subq,
-            (ContainerMetric.app_id == subq.c.app_id) &
-            (ContainerMetric.collected_at == subq.c.latest)
+        results = (
+            db.query(ContainerMetric)
+            .join(
+                subq,
+                (ContainerMetric.app_id == subq.c.app_id) &
+                (ContainerMetric.collected_at == subq.c.latest)
+            )
+            .all()
         )
-        .all()
-    )
 
     return [_metric_to_dict(m) for m in results]
 
@@ -89,22 +131,24 @@ def get_metrics_summary(db: Session = Depends(get_db)):
 def get_app_metrics(
     app_id: str,
     minutes: int = 60,
+    current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Retourne les métriques d'une app sur les N dernières minutes.
     Triées de la plus récente à la plus ancienne.
-    Utile pour tracer des graphiques de tendance.
+    Un utilisateur ne peut voir que les métriques de ses propres apps.
     """
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     metrics = db.query(ContainerMetric).filter(
         ContainerMetric.app_id == app_id,
+        ContainerMetric.user_id == current_user,
         ContainerMetric.collected_at >= since,
     ).order_by(ContainerMetric.collected_at.desc()).limit(500).all()
 
     if not metrics:
-        return []
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="App non trouvée ou accès refusé")
 
     return [_metric_to_dict(m) for m in metrics]
 

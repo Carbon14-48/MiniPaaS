@@ -10,7 +10,7 @@ POST /logs/{app_id}/collect → force une collecte immédiate des logs
 """
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 
 from src.db import get_db, SessionLocal
@@ -21,8 +21,23 @@ from src.services.docker_collector import (
     parse_container_identity,
 )
 from src.services.log_collector import collect_container_logs
+from src.services.auth_client import verify_token
 
 router = APIRouter(prefix="/logs", tags=["logs"])
+
+
+from typing import Optional
+
+
+def get_current_user(authorization: str = Header(None)) -> Optional[int]:
+    if not authorization:
+        return None
+    if authorization.startswith("Bearer "):
+        authorization = authorization[7:]
+    try:
+        return verify_token(authorization)
+    except:
+        return None
 
 
 # ── GET /logs/user/{user_id} ──────────────────────────────────────────────────
@@ -33,12 +48,17 @@ def get_user_logs(
     user_id: int,
     minutes: int = 60,
     level: str = None,
+    current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Logs récents de toutes les apps d'un utilisateur.
     Filtrable par niveau : INFO, WARN, ERROR, DEBUG.
+    Un utilisateur ne peut voir que ses propres logs.
     """
+    if current_user != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     query = db.query(LogEntry).filter(
@@ -61,6 +81,7 @@ def get_app_logs(
     minutes: int = 60,
     level: str = None,
     limit: int = 200,
+    current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -70,11 +91,13 @@ def get_app_logs(
         minutes : fenêtre temporelle (défaut 60 min)
         level   : filtrer par niveau INFO/WARN/ERROR/DEBUG
         limit   : nombre max de lignes (défaut 200)
+    Un utilisateur ne peut voir que les logs de ses propres apps.
     """
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     query = db.query(LogEntry).filter(
         LogEntry.app_id == app_id,
+        LogEntry.user_id == current_user,
         LogEntry.collected_at >= since,
     )
 
@@ -82,6 +105,10 @@ def get_app_logs(
         query = query.filter(LogEntry.level == level.upper())
 
     logs = query.order_by(LogEntry.collected_at.desc()).limit(limit).all()
+
+    if not logs:
+        return []
+
     return [_log_to_dict(l) for l in logs]
 
 
@@ -90,7 +117,8 @@ def get_app_logs(
 @router.get("/{app_id}/live")
 def get_app_logs_live(
     app_id: str,
-    tail: int = Query(default=100, le=500)
+    tail: int = Query(default=100, le=500),
+    current_user: int = Depends(get_current_user)
 ):
     """
     Logs live directement depuis le Docker daemon — sans passer par la base.
@@ -98,6 +126,7 @@ def get_app_logs_live(
 
     Ne stocke PAS en base — lecture directe uniquement.
     Paramètre tail : nombre de lignes (max 500).
+    Vérifie que l'app appartient à l'utilisateur connecté.
     """
     client = get_docker_client()
     if not client:
@@ -111,13 +140,15 @@ def get_app_logs_live(
     for c in containers:
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
+            if identity["user_id"] != current_user:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
             target = c
             break
 
     if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Aucun container actif trouvé pour l'app '{app_id}'"
+            detail="App non trouvée ou accès refusé"
         )
 
     entries = collect_container_logs(target, tail=tail)
@@ -132,10 +163,14 @@ def get_app_logs_live(
 # ── POST /logs/{app_id}/collect ───────────────────────────────────────────────
 
 @router.post("/{app_id}/collect")
-def force_collect_logs(app_id: str):
+def force_collect_logs(
+    app_id: str,
+    current_user: int = Depends(get_current_user)
+):
     """
     Force une collecte immédiate des logs pour une app.
     Utile après un déploiement pour voir les logs de démarrage sans attendre.
+    Vérifie que l'app appartient à l'utilisateur connecté.
     """
     client = get_docker_client()
     if not client:
@@ -149,13 +184,15 @@ def force_collect_logs(app_id: str):
     for c in containers:
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
+            if identity["user_id"] != current_user:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
             target = c
             break
 
     if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Aucun container actif trouvé pour l'app '{app_id}'"
+            detail="App non trouvée ou accès refusé"
         )
 
     identity = parse_container_identity(target)

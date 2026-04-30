@@ -180,28 +180,36 @@ def parse_container_identity(container) -> dict:
       2. Convention de nommage : minipaas_{user_id}_{app_name}
          Ex: minipaas_42_myapp → user_id=42, app_id=myapp
 
-    Retourne dict avec app_id et user_id (user_id=0 si non trouvé)
+    Retourne dict avec app_id, user_id et container_id
     """
     labels = container.labels or {}
     name = container.name.lstrip("/")
+    container_id = container.short_id
 
     # Priorité 1 : labels
     app_id = labels.get("minipaas.app_id")
     user_id_str = labels.get("minipaas.user_id", "0")
 
     if app_id:
-        return {"app_id": app_id, "user_id": int(user_id_str)}
+        return {"app_id": app_id, "user_id": int(user_id_str), "container_id": container_id}
 
-    # Priorité 2 : convention minipaas_{user_id}_{app_name}
-    if name.startswith("minipaas_"):
+    # Priorité 2 : convention minipaas_{user_id}_{app_name} ou minipaas-{user_id}-{app_name}
+    if name.startswith("minipaas-"):
+        parts = name.split("-", 2)
+        if len(parts) >= 3:
+            try:
+                return {"app_id": "-".join(parts[2:]), "user_id": int(parts[1]), "container_id": container_id}
+            except ValueError:
+                pass
+    elif name.startswith("minipaas_"):
         parts = name.split("_", 2)
         if len(parts) >= 3:
             try:
-                return {"app_id": parts[2], "user_id": int(parts[1])}
+                return {"app_id": parts[2], "user_id": int(parts[1]), "container_id": container_id}
             except ValueError:
                 pass
         elif len(parts) == 2:
-            return {"app_id": parts[1], "user_id": 0}
+            return {"app_id": parts[1], "user_id": 0, "container_id": container_id}
 
     # Fallback : nom complet comme app_id
-    return {"app_id": name, "user_id": 0}
+    return {"app_id": name, "user_id": 0, "container_id": container_id}

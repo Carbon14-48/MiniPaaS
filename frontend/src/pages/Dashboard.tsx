@@ -82,6 +82,12 @@ export default function Dashboard() {
               Browse Repositories
             </Link>
             <Link
+              to="/monitoring"
+              className="px-4 py-2 bg-accent-blue hover:bg-accent-blue/80 text-white rounded-lg transition"
+            >
+              Monitor Apps
+            </Link>
+            <Link
               to="/deployments"
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition"
             >

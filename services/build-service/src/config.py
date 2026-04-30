@@ -10,9 +10,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    auth_service_url: str = "http://auth-service:8001"
-    scanner_service_url: str = "http://security-scanner:8006"
-    registry_service_url: str = "http://registry-service:8007"
+    auth_service_url: str = "http://auth-service:8000"
+    scanner_service_url: str = "http://security-scanner:8000"
+    registry_service_url: str = "http://registry-service:8005"
+    
+    # Override registry host - use Docker Hub for testing
+    registry_push_url: str = ""  # If empty, push to local registry
 
     database_url: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
 

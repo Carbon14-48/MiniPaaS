@@ -42,10 +42,10 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 DOCKERFILE_NODE = """FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --production
+RUN npm install --production || npm install
 COPY . .
-EXPOSE 3000
-CMD ["node", "index.js"]
+EXPOSE 8000
+CMD ["sh", "-c", "node index.js || node server.js || node app.js || npx serve -s . -l 8000"]
 """
 
 DOCKERFILE_JAVA = """FROM maven:3.9-eclipse-temurin-17 AS build

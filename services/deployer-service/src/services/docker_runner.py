@@ -79,12 +79,28 @@ class DockerRunner:
                 logger.warning(f"Could not pull {registry_image}, trying {image_tag}")
                 raise ValueError(f"Image {image_tag} not found. Registry pull failed: {e}")
 
+        # Detect exposed port from image
+        container_port = 8000  # default
+        try:
+            image = self.client.images.get(run_image)
+            # Try different ways to get exposed ports
+            if hasattr(image, 'attrs') and image.attrs.get('Config', {}).get('ExposedPorts'):
+                exposed = list(image.attrs['Config']['ExposedPorts'].keys())[0]
+                container_port = int(exposed.split('/')[0])
+                logger.info(f"Image exposes port: {container_port}")
+            elif hasattr(image, 'exposed_ports'):
+                exposed = list(image.exposed_ports.keys())[0]
+                container_port = int(exposed.split('/')[0])
+                logger.info(f"Image exposes port: {container_port}")
+        except Exception as e:
+            logger.warning(f"Could not detect exposed port, using default 8000: {e}")
+        
         container = self.client.containers.run(
             image=run_image,
             name=container_name,
             detach=True,
             ports={
-                "8000/tcp": host_port
+                f"{container_port}/tcp": host_port
             },
             environment=env if env else None,
             restart_policy={"Name": "unless-stopped"},
@@ -101,7 +117,7 @@ class DockerRunner:
             "container_id": container.id,
             "container_short_id": container.short_id,
             "host_port": host_port,
-            "container_port": 8000,
+            "container_port": container_port,
             "status": container.status,
             "container_url": f"http://localhost:{host_port}"
         }

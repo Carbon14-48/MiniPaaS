@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: minipaas
       POSTGRES_DB: minipaas
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -38,15 +38,6 @@ services:
       timeout: 5s
       retries: 5
 
-  api-gateway:
-    build: ./services/api-gateway
-    ports:
-      - "8000:8000"
-    env_file: .env
-    depends_on:
-      - rabbitmq
-      - redis
-
   auth-service:
     build: ./services/auth-service
     ports:
@@ -68,10 +59,16 @@ services:
   build-service:
     build: ./services/build-service
     ports:
-      - "8003:8000"
+      - "8003:8002"
+    environment:
+      - DATABASE_URL=postgresql://minipaas:minipaas@postgres:5432/minipaas
+      - AUTH_SERVICE_URL=http://auth-service:8000
+      - SCANNER_SERVICE_URL=http://security-scanner:8000
+      - REGISTRY_SERVICE_URL=http://registry-service:8005
     env_file: .env
     depends_on:
       - rabbitmq
+      - postgres
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -92,19 +89,29 @@ services:
     build: ./services/registry-service
     ports:
       - "8007:8000"
+    environment:
+      - DATABASE_URL=postgresql://minipaas:minipaas@postgres:5432/minipaas
+      - REGISTRY_HOST=localhost:5000
+      - REGISTRY_URL=http://localhost:5000
     env_file: .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - registry
+      - postgres
 
   monitoring-service:
     build: ./services/monitoring-service
     ports:
       - "8005:8000"
+    environment:
+      - DATABASE_URL=postgresql://minipaas:minipaas@postgres:5432/minipaas
     env_file: .env
     depends_on:
       - rabbitmq
+      - postgres
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
   security-scanner:
     build: ./services/security-scanner
@@ -129,6 +136,35 @@ services:
       - build-service
       - registry-service
 
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - auth-service
+      - app-management
+      - deployer-service
+      - deployment-service
+      - monitoring-service
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+      - auth-service
+      - deployer-service
+      - monitoring-service
+    networks:
+      - default
+    restart: on-failure
+
 volumes:
   postgres_data:
   trivy_cache:
+
+networks:
+  default:
+    driver: bridge

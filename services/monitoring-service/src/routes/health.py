@@ -9,7 +9,7 @@ GET /health/containers/all → état de tous les containers monitorés
 """
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -20,18 +20,37 @@ from src.services.docker_collector import (
     get_monitored_containers,
     parse_container_identity,
 )
+from src.services.auth_client import verify_token
 
 router = APIRouter(prefix="/health", tags=["health"])
+
+
+from typing import Optional
+
+
+def get_current_user(authorization: str = Header(None)) -> Optional[int]:
+    if not authorization:
+        return None
+    if authorization.startswith("Bearer "):
+        authorization = authorization[7:]
+    try:
+        return verify_token(authorization)
+    except:
+        return None
 
 
 # ── GET /health/containers/all ────────────────────────────────────────────────
 # IMPORTANT : avant /health/{app_id} pour éviter que "containers" soit app_id
 
 @router.get("/containers/all")
-def get_all_containers_health():
+def get_all_containers_health(
+    current_user: Optional[int] = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Retourne l'état de tous les containers monitorés en temps réel.
     Lit directement depuis le Docker daemon — pas depuis la base.
+    Ne retourne que les containers de l'utilisateur connecté.
     """
     client = get_docker_client()
     if not client:
@@ -46,6 +65,8 @@ def get_all_containers_health():
 
     for c in containers:
         identity = parse_container_identity(c)
+        if current_user is None or identity["user_id"] != current_user:
+            continue
         result.append({
             "app_id": identity["app_id"],
             "user_id": identity["user_id"],
@@ -63,18 +84,22 @@ def get_all_containers_health():
     }
 
 
-# ── GET /health/{app_id} ──────────────────────────────────────────────────────
+# ── GET /health/{app_id} ───────────────────────────────���──────────────────────
 
 @router.get("/{app_id}")
-def get_app_health(app_id: str, db: Session = Depends(get_db)):
+def get_app_health(
+    app_id: str,
+    current_user: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Retourne la santé d'une application spécifique.
 
     Combine :
       - Statut live du container (Docker daemon)
       - Dernières métriques connues (base PostgreSQL)
+    Vérifie que l'app appartient à l'utilisateur connecté.
     """
-    # Statut live depuis Docker
     client = get_docker_client()
     container_status = "unknown"
     container_name = None
@@ -84,21 +109,26 @@ def get_app_health(app_id: str, db: Session = Depends(get_db)):
         for c in containers:
             identity = parse_container_identity(c)
             if identity["app_id"] == app_id:
+                if identity["user_id"] != current_user:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
                 container_status = c.status
                 container_name = c.name.lstrip("/")
                 break
 
-    # Dernières métriques depuis la base
     since = datetime.now(timezone.utc) - timedelta(minutes=10)
     latest_metric = (
         db.query(ContainerMetric)
         .filter(
             ContainerMetric.app_id == app_id,
+            ContainerMetric.user_id == current_user,
             ContainerMetric.collected_at >= since,
         )
         .order_by(ContainerMetric.collected_at.desc())
         .first()
     )
+
+    if not latest_metric and container_status == "unknown":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="App non trouvée ou accès refusé")
 
     healthy = container_status == "running"
 

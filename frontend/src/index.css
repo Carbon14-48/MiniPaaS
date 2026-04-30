@@ -2,6 +2,163 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-gray-900 text-gray-100;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  ::selection {
+    @apply bg-accent-blue/30 text-text-primary;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card border border-border rounded-xl shadow-card transition-all duration-300;
+  }
+  .card:hover {
+    @apply shadow-card-hover border-border-hover;
+  }
+  .btn-primary {
+    @apply px-4 py-2 bg-accent-blue hover:bg-accent-blue/80 text-white rounded-lg font-medium transition-all duration-200 active:scale-95;
+  }
+  .btn-secondary {
+    @apply px-4 py-2 bg-bg-hover hover:bg-border text-text-primary rounded-lg font-medium transition-all duration-200 active:scale-95;
+  }
+  .btn-danger {
+    @apply px-4 py-2 bg-accent-red/20 hover:bg-accent-red text-accent-red rounded-lg font-medium transition-all duration-200 active:scale-95;
+  }
+  .input {
+    @apply w-full px-4 py-2.5 bg-bg-input border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent-blue/50 focus:border-accent-blue transition-all duration-200;
+  }
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+  .status-dot.running {
+    @apply bg-accent-green shadow-glow-green animate-pulse-slow;
+  }
+  .status-dot.stopped {
+    @apply bg-text-muted;
+  }
+  .status-dot.failed {
+    @apply bg-accent-red shadow-glow-red animate-pulse-fast;
+  }
+  .status-dot.building {
+    @apply bg-accent-orange animate-pulse;
+  }
+  .glow-green {
+    --glow-color: #22c55e;
+  }
+  .glow-red {
+    --glow-color: #ef4444;
+  }
+  .glow-orange {
+    --glow-color: #f59e0b;
+  }
+  .glow-blue {
+    --glow-color: #3b82f6;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent-blue to-accent-cyan bg-clip-text text-transparent;
+  }
+  .glass {
+    @apply bg-bg-card/80 backdrop-blur-md border border-border/50;
+  }
+  .border-glow {
+    @apply border-accent-blue/30 hover:border-accent-blue/60 transition-colors duration-300;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3a4d;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3a4d transparent;
+}
+
+/* Terminal scanlines effect */
+.terminal-bg {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(59, 130, 246, 0.03) 50%,
+    transparent 100%
+  );
+  background-size: 100% 4px;
+}
+
+/* Glow animations */
+@keyframes text-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px currentColor;
+  }
+  50% {
+    text-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+}
+
+.text-glow {
+  animation: text-glow 2s ease-in-out infinite;
+}
+
+/* Skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1a2332 25%,
+    #243044 50%,
+    #1a2332 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Chart tooltip */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-default-tooltip {
+  @apply !bg-bg-card !border !border-border !rounded-lg !shadow-card-hover;
+}
+
+.recharts-tooltip-label {
+  @apply !text-text-secondary !text-xs !mb-1;
+}
+
+.recharts-tooltip-item {
+  @apply !text-text-primary !text-sm;
 }

@@ -7,17 +7,22 @@ async def trigger_build(
     token: str,
     repo_url: str,
     branch: str,
-    app_name: str
+    app_name: str,
+    github_token: str = None
 ) -> dict:
     async with httpx.AsyncClient(timeout=300.0) as client:
         try:
+            payload = {
+                "repo_url": repo_url,
+                "branch": branch,
+                "app_name": app_name
+            }
+            if github_token:
+                payload["github_token"] = github_token
+                
             response = await client.post(
                 f"{settings.BUILD_SERVICE_URL}/build",
-                json={
-                    "repo_url": repo_url,
-                    "branch": branch,
-                    "app_name": app_name
-                },
+                json=payload,
                 headers={"Authorization": f"Bearer {token}"}
             )
             if response.status_code == 200:

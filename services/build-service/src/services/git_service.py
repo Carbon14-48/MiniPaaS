@@ -28,7 +28,7 @@ from fastapi import HTTPException, status
 from src.config import settings
 
 
-def clone_repo(repo_url: str, job_id: str, branch: str = "main") -> str:
+def clone_repo(repo_url: str, job_id: str, branch: str = "main", github_token: str = None) -> str:
     """
     Clone un repo Git dans /tmp/builds/<job_id>/.
 
@@ -36,6 +36,7 @@ def clone_repo(repo_url: str, job_id: str, branch: str = "main") -> str:
         repo_url : URL publique du repo (ex: https://github.com/user/app.git)
         job_id   : identifiant unique du build (sert de nom de dossier)
         branch   : branche à cloner (défaut: main)
+        github_token : token GitHub optionnel pour repos privés
 
     Retourne :
         chemin absolu du dossier cloné (ex: "/tmp/builds/job_a3f9c1")
@@ -45,7 +46,6 @@ def clone_repo(repo_url: str, job_id: str, branch: str = "main") -> str:
         HTTPException 500 : erreur Git inattendue
     """
     # Construit le chemin de destination
-    # Ex: /tmp/builds/job_a3f9c1
     clone_path = os.path.join(settings.build_workdir, job_id)
 
     # Crée le dossier parent /tmp/builds/ s'il n'existe pas
@@ -54,6 +54,12 @@ def clone_repo(repo_url: str, job_id: str, branch: str = "main") -> str:
     # Si le dossier existe déjà (retry), on le supprime d'abord
     if os.path.exists(clone_path):
         shutil.rmtree(clone_path)
+
+    # Injecter le token GitHub dans l'URL si fourni
+    if github_token:
+        # Convert https://github.com/user/repo -> https://TOKEN@github.com/user/repo
+        if repo_url.startswith("https://github.com/"):
+            repo_url = repo_url.replace("https://github.com/", f"https://{github_token}@github.com/")
 
     try:
         # Clone le repo sur la branche demandée

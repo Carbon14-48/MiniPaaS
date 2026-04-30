@@ -9,6 +9,7 @@ import GitHubCallback from './pages/GitHubCallback';
 import Deployments from './pages/Deployments';
 import Repositories from './pages/Repositories';
 import NewDeployment from './pages/NewDeployment';
+import Monitoring from './pages/Monitoring';
 import { useEffect } from 'react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -62,6 +63,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <NewDeployment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/monitoring"
+        element={
+          <ProtectedRoute>
+            <Monitoring />
           </ProtectedRoute>
         }
       />
