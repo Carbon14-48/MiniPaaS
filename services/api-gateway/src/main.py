@@ -18,7 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(proxy.router, prefix="/api", tags=["proxy"])
+app.include_router(proxy.router, tags=["proxy"])
 
 
 @app.get("/")

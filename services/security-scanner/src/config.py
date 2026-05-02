@@ -15,11 +15,11 @@ class Settings(BaseSettings):
 
     SCANNER_MAX_TIMEOUT: int = 300
     
-    # PERMISSIVE MODE FOR TESTING - Nothing is blocked
-    BLOCK_ON_HIGH_CVES: bool = False
-    BLOCK_ON_MALWARE: bool = False
-    BLOCK_ON_SECRETS: bool = False
-    BLOCK_ON_ROOT_USER: bool = False
+    # SECURITY POLICY - Block deployments with issues
+    BLOCK_ON_HIGH_CVES: bool = True
+    BLOCK_ON_MALWARE: bool = True
+    BLOCK_ON_SECRETS: bool = True
+    BLOCK_ON_ROOT_USER: bool = True
 
     class Config:
         env_file = ".env"

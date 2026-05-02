@@ -42,7 +42,7 @@ async def scan_image(image_tag: str, user_id: int, app_name: str) -> dict:
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
-                f"{settings.scanner_service_url}/image",
+                f"{settings.scanner_service_url}/scans/image",
                 json={
                     "image_tag": image_tag,
                     "user_id": user_id,

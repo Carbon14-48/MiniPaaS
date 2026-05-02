@@ -8,27 +8,39 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/auth': {
-        target: 'http://127.0.0.1:8001',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/repos': {
-        target: 'http://localhost:8008',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/deployments': {
-        target: 'http://localhost:8008',
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
+      '/builds': {
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/metrics': {
-        target: 'http://localhost:8006',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/logs': {
-        target: 'http://localhost:8006',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:8006',
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
+      '/scanner': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
+      '/registry': {
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
       },
     },

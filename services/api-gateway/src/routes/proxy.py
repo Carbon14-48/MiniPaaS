@@ -40,8 +40,11 @@ async def proxy(service: str, path: str, request: Request):
     
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
     
+    # Builds + scanning can take several minutes
+    timeout = 600.0 if service == "builds" else 30.0
+    
     try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             body = await request.body()
             response = await client.request(
                 method=request.method,
@@ -79,8 +82,11 @@ async def proxy_root(service: str, request: Request):
     
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
     
+    # Builds + scanning can take several minutes
+    timeout = 600.0 if service == "builds" else 30.0
+    
     try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             body = await request.body()
             response = await client.request(
                 method=request.method,

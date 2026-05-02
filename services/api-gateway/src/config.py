@@ -10,15 +10,15 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
 
-    # Service URLs (internal Docker - using IPs for now)
-    AUTH_SERVICE_URL: str = "http://172.18.0.9:8000/auth"
-    APP_MANAGEMENT_SERVICE_URL: str = "http://172.18.0.5:8000"
-    BUILD_SERVICE_URL: str = "http://172.18.0.6:8002"
-    DEPLOYMENT_SERVICE_URL: str = "http://172.18.0.11:8000"
-    DEPLOYER_SERVICE_URL: str = "http://172.18.0.10:8000"
-    MONITORING_SERVICE_URL: str = "http://172.18.0.7:8006"
-    SECURITY_SCANNER_URL: str = "http://172.18.0.14:8000"
-    REGISTRY_SERVICE_URL: str = "http://172.18.0.8:8005"
+    # Service URLs (localhost for manual dev, or Docker service names)
+    AUTH_SERVICE_URL: str = "http://localhost:8001/auth"
+    APP_MANAGEMENT_SERVICE_URL: str = "http://localhost:8002"
+    BUILD_SERVICE_URL: str = "http://localhost:8003"
+    DEPLOYMENT_SERVICE_URL: str = "http://localhost:8004"
+    DEPLOYER_SERVICE_URL: str = "http://localhost:8008"
+    MONITORING_SERVICE_URL: str = "http://localhost:8006"
+    SECURITY_SCANNER_URL: str = "http://localhost:8000"
+    REGISTRY_SERVICE_URL: str = "http://localhost:8007"
 
     class Config:
         env_file = ".env"
