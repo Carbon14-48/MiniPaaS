@@ -4,14 +4,12 @@ import tempfile
 import time
 import logging
 import shutil
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 import docker
 
 from src.models.scan_request import ScanRequest
-from src.models.scan_result import ScanResponse, ScanStatus, Verdict, ToolStatus
-from src.models.findings import SeverityBreakdown
+from src.models.scan_result import ScanResponse, ScanStatus, ToolStatus
 from src.scanners import (
     TrivyScanner,
     ClamavScanner,
@@ -21,7 +19,6 @@ from src.scanners import (
     check_base_image,
 )
 from src.services import ResultAggregator, PolicyEngine
-from src.config import settings
 
 logger = logging.getLogger(__name__)
 

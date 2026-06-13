@@ -1,4 +1,3 @@
-import pytest
 from src.scanners.base_image_checker import (
     check_base_image,
     APPROVED_BASE_IMAGES,

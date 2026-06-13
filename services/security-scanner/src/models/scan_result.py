@@ -6,11 +6,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from src.models.findings import (
     SeverityBreakdown,
     ScanDetails,
-    Vulnerability,
-    Secret,
-    MalwareFinding,
-    Misconfiguration,
-    BaseImageCheck,
 )
 
 

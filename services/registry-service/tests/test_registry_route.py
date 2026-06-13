@@ -13,7 +13,6 @@ from sqlalchemy.orm import sessionmaker
 
 from src.main import app
 from src.db import Base, get_db
-from src.models.image import RegistryImage
 
 DB_PATH = "./test_registry.db"
 

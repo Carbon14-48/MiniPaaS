@@ -1,20 +1,17 @@
 import json
 import subprocess
-import tempfile
 import os
 import logging
 import shutil
 import re
 from pathlib import Path
 
-from src.config import settings
 from src.models.findings import Secret
 
 logger = logging.getLogger(__name__)
 
 SECRET_PATTERNS = {
-    ".env": re.compile(r"^[\w]+\s*=\s*[\"']?[\w\-\_\./+]+[\"']?$", re.MULTILINE),
-    ".env": re.compile(r"(AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|DATABASE_URL|POSTGRES_PASSWORD|MONGO_URI|SECRET_KEY|API_KEY|TOKEN|PASSWORD)\s*=\s*[\"']?[\w\-\_\./+]+[\"']?", re.IGNORECASE),
+    ".env": re.compile(r"(?:^[\w]+\s*=\s*[\"']?[\w\-\_\./+]+[\"']?$|(?:AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|DATABASE_URL|POSTGRES_PASSWORD|MONGO_URI|SECRET_KEY|API_KEY|TOKEN|PASSWORD)\s*=\s*[\"']?[\w\-\_\./+]+[\"']?)", re.MULTILINE | re.IGNORECASE),
     ".aws": re.compile(r"(aws_access_key_id|aws_secret_access_key)\s*=\s*[\"']?[\w\-\_]+[\"']?", re.IGNORECASE),
     ".pem": re.compile(r"-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     ".key": re.compile(r"-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----"),
@@ -223,7 +220,6 @@ class TruffleHogScanner:
                 "SourceID", "unknown"
             )
 
-            extra = entry.get("ExtraData", {})
             line_info = entry.get("SourceMetadata", {}).get("Data", {}).get(
                 "line", None
             )

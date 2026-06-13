@@ -93,7 +93,7 @@ def push_image(request: PushRequest, db: Session = Depends(get_db)):
     # Vérifie si cette image a déjà été pushée (idempotence)
     existing = db.query(RegistryImage).filter(
         RegistryImage.image_tag == request.image_tag,
-        RegistryImage.is_active == True
+        RegistryImage.is_active
     ).first()
 
     if existing:
@@ -149,7 +149,7 @@ def get_user_images(user_id: int, db: Session = Depends(get_db)):
     """
     images = db.query(RegistryImage).filter(
         RegistryImage.user_id == user_id,
-        RegistryImage.is_active == True
+        RegistryImage.is_active
     ).order_by(RegistryImage.pushed_at.desc()).all()
 
     return [_to_response(img) for img in images]
@@ -177,7 +177,7 @@ def get_image_by_tag(image_tag: str, db: Session = Depends(get_db)):
 
     image = db.query(RegistryImage).filter(
         RegistryImage.image_tag == decoded_tag,
-        RegistryImage.is_active == True
+        RegistryImage.is_active
     ).first()
 
     if not image:
@@ -207,7 +207,7 @@ def delete_image(image_tag: str, db: Session = Depends(get_db)):
 
     image = db.query(RegistryImage).filter(
         RegistryImage.image_tag == decoded_tag,
-        RegistryImage.is_active == True
+        RegistryImage.is_active
     ).first()
 
     if not image:

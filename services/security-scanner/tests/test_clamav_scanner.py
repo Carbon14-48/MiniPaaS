@@ -1,4 +1,3 @@
-import pytest
 from src.scanners.clamav_scanner import ClamavScanner
 
 

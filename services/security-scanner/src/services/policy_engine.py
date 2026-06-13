@@ -3,11 +3,9 @@ import os
 import subprocess
 from typing import Optional
 
-from src.config import settings
 from src.models.findings import (
     ScanDetails,
     SeverityBreakdown,
-    Severity,
 )
 from src.models.scan_result import (
     ScanStatus,
@@ -49,7 +47,7 @@ def check_security_tools_available() -> dict:
     
     # Check YARA
     try:
-        import yara
+        import yara  # noqa: F401
         tools["yara"] = True
     except Exception:
         tools["yara"] = False

@@ -22,10 +22,9 @@ from src.services.docker_collector import (
 )
 from src.services.auth_client import verify_token
 
-router = APIRouter(prefix="/health", tags=["health"])
-
-
 from typing import Optional
+
+router = APIRouter(prefix="/health", tags=["health"])
 
 
 def get_current_user(authorization: str = Header(None)) -> Optional[int]:
@@ -36,7 +35,7 @@ def get_current_user(authorization: str = Header(None)) -> Optional[int]:
         authorization = authorization[7:]
     try:
         return verify_token(authorization)
-    except:
+    except Exception:
         return 1  # Fallback to 1 in dev
 
 

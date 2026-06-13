@@ -1,6 +1,5 @@
 import httpx
 from ..config import settings
-from typing import Optional
 
 
 async def get_user_repos(token: str, page: int = 1, per_page: int = 30) -> list[dict]:

@@ -3,7 +3,6 @@ tests/test_metrics_route.py
 ----------------------------
 Tests des endpoints métriques.
 """
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

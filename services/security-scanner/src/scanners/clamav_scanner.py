@@ -1,5 +1,4 @@
 import subprocess
-import tempfile
 import os
 import logging
 
@@ -82,7 +81,6 @@ class ClamavScanner:
             if any(line.startswith(p) for p in non_malware_prefixes):
                 continue
 
-            line_lower = line.lower()
             if "FOUND" in line_upper if (line_upper := line.upper()) else False:
                 parts = line.split(":")
                 if len(parts) >= 2:
@@ -130,7 +128,6 @@ class ClamavScanner:
         try:
             db_main = os.path.join(self.clamav_db, "main.cvd")
             db_cld = os.path.join(self.clamav_db, "main.cld")
-            db_cld2 = os.path.join(self.clamav_db, "main.cld")
             if not (os.path.exists(db_main) or os.path.exists(db_cld)):
                 logger.warning(
                     f"ClamAV database not found at {self.clamav_db}. "

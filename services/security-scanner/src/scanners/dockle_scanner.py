@@ -4,7 +4,6 @@ import tempfile
 import os
 import logging
 
-from src.config import settings
 from src.models.findings import Misconfiguration, Severity
 
 logger = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ class DockleScanner:
                 image_tag,
             ]
 
-            result = subprocess.run(
+            subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,

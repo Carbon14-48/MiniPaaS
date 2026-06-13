@@ -3,8 +3,7 @@ tests/test_docker_collector.py
 --------------------------------
 Tests de la logique de collecte Docker (sans vrai daemon).
 """
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from src.services.docker_collector import (
     _calculate_cpu_percent,
     _extract_network_stats,

@@ -11,7 +11,6 @@ On ne stocke que les N dernières lignes pour éviter de saturer la base.
 import re
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 from docker.errors import NotFound, DockerException
 
 logger = logging.getLogger(__name__)

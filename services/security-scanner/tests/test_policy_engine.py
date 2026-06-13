@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from src.services.policy_engine import PolicyEngine
 from src.models.findings import (
     ScanDetails,

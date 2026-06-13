@@ -15,7 +15,6 @@ Il communique uniquement avec le daemon Docker via le SDK Python
 et avec registry:5000 via l'API Docker Registry V2.
 """
 
-import httpx
 import docker
 from docker.errors import ImageNotFound, APIError, DockerException
 from fastapi import HTTPException, status

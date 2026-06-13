@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from src.models.scan_result import HealthResponse, ToolStatus
+from src.models.scan_result import HealthResponse
 
 router = APIRouter()
 

@@ -19,7 +19,7 @@ Comment ça marche :
 
 import docker
 from docker.errors import DockerException, NotFound
-from datetime import datetime, timezone
+
 from typing import Optional
 import logging
 

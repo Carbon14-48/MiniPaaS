@@ -23,15 +23,13 @@ from src.services.docker_collector import (
 from src.services.log_collector import collect_container_logs
 from src.services.auth_client import verify_token
 
+from typing import Optional
 import logging
 from src.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/logs", tags=["logs"])
-
-
-from typing import Optional
 
 
 def get_current_user(authorization: str = Header(None)) -> Optional[int]:
@@ -45,7 +43,7 @@ def get_current_user(authorization: str = Header(None)) -> Optional[int]:
         authorization = authorization[7:]
     try:
         return verify_token(authorization)
-    except:
+    except Exception:
         return None
 
 
@@ -79,7 +77,7 @@ def get_user_logs(
         query = query.filter(LogEntry.level == level.upper())
 
     logs = query.order_by(LogEntry.collected_at.desc()).limit(500).all()
-    return [_log_to_dict(l) for l in logs]
+    return [_log_to_dict(log) for log in logs]
 
 
 # ── DELETE /logs/{app_id} ─────────────────────────────────────────────────────
@@ -146,7 +144,7 @@ def get_app_logs(
     if not logs:
         return []
 
-    return [_log_to_dict(l) for l in logs]
+    return [_log_to_dict(log) for log in logs]
 
 
 # ── GET /logs/{app_id}/live ───────────────────────────────────────────────────
@@ -267,16 +265,16 @@ def force_collect_logs(
 
 # ── Utilitaire ────────────────────────────────────────────────────────────────
 
-def _log_to_dict(l: LogEntry) -> dict:
+def _log_to_dict(log: LogEntry) -> dict:
     return {
-        "id": str(l.id),
-        "app_id": l.app_id,
-        "user_id": l.user_id,
-        "container_id": l.container_id,
-        "container_name": l.container_name,
-        "level": l.level,
-        "message": l.message,
-        "log_timestamp": l.log_timestamp.isoformat() if l.log_timestamp else None,
-        "collected_at": l.collected_at.isoformat(),
+        "id": str(log.id),
+        "app_id": log.app_id,
+        "user_id": log.user_id,
+        "container_id": log.container_id,
+        "container_name": log.container_name,
+        "level": log.level,
+        "message": log.message,
+        "log_timestamp": log.log_timestamp.isoformat() if log.log_timestamp else None,
+        "collected_at": log.collected_at.isoformat(),
     }
 

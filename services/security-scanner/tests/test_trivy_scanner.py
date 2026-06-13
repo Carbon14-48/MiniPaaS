@@ -1,4 +1,3 @@
-import pytest
 from src.scanners.trivy_scanner import TrivyScanner
 from src.models.findings import Severity
 

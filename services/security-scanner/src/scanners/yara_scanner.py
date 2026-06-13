@@ -86,7 +86,6 @@ class YaraScanner:
                     severity = Severity.CRITICAL
 
                 category = rule_meta.get("category", "malware")
-                description = rule_meta.get("description", f"YARA rule matched: {rule_name}")
 
                 for matched_file in match.files:
                     for string_match in matched_file.strings:

@@ -1,12 +1,8 @@
 import docker
 from docker.models.images import Image
-import tempfile
-import shutil
 import os
 from contextlib import contextmanager
 from typing import Generator
-
-from src.config import settings
 
 
 class ImageLoader:
@@ -31,10 +27,7 @@ class ImageLoader:
     def get_base_image(self, image_tag: str) -> str:
         """Extract the FROM line / base image from an image's history."""
         try:
-            img = self.get_image(image_tag)
-            # Inspect the image to get the full config
             info = self.client.api.inspect_image(image_tag)
-            config = info.get("Config", {})
             # Try to get base image from the image's parent chain
             parent_id = info.get("Parent", "")
             if not parent_id:
@@ -103,8 +96,6 @@ class ImageLoader:
         os.makedirs(dest_dir, exist_ok=True)
 
         try:
-            # Use docker save to extract layers
-            image = self.get_image(image_tag)
             image_data = self.client.api.get_image(image_tag)
 
             # Save to tar archive in temp
@@ -132,9 +123,6 @@ class ImageLoader:
             try:
                 stdout = container.get_archive("/")
                 files = []
-                # Read the tar stream
-                import tarfile
-                import io
                 while True:
                     try:
                         chunk = next(stdout)

@@ -9,7 +9,6 @@ from src.models.findings import (
     BaseImageCheck,
     ScanDetails,
     SeverityBreakdown,
-    Severity,
 )
 
 logger = logging.getLogger(__name__)

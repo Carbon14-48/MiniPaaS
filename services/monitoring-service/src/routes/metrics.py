@@ -39,7 +39,7 @@ def get_current_user(authorization: str = Header(None)) -> Optional[int]:
         authorization = authorization[7:]
     try:
         return verify_token(authorization)
-    except:
+    except Exception:
         return 1  # Fallback to 1 in dev
 
 
