@@ -1,6 +1,5 @@
 import httpx
 from ..config import settings
-from typing import Optional
 
 
 async def trigger_build(

@@ -9,15 +9,13 @@ On simule (mock) les services externes pour tester uniquement la logique des rou
 Lancer avec : pytest tests/ -v
 """
 
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.main import app
 from src.db import Base, get_db
-from src.models.job import BuildJob, BuildStatus
 
 # ── Base de données SQLite en mémoire pour les tests ─────────────────────────
 # On ne touche pas à la vraie base PostgreSQL pendant les tests

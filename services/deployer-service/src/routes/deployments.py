@@ -199,7 +199,7 @@ async def list_deployments(
     try:
         deployments = db.query(Deployment).filter(
             Deployment.user_id == user_id,
-            Deployment.is_active == True
+            Deployment.is_active
         ).order_by(Deployment.created_at.desc()).all()
         
         return DeploymentListResponse(

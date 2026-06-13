@@ -10,7 +10,8 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-import sys, os
+import sys
+import os
 
 # Permet d'importer les modules src/ depuis ce fichier
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

@@ -49,7 +49,7 @@ async def get_github_token(minipaas_token: str) -> str:
                     raise HTTPException(status_code=401, detail="No GitHub token found. Please login with GitHub OAuth first.")
                 return github_token
             else:
-                raise HTTPException(status_code=response.status_code, detail=f"Failed to get GitHub token")
+                raise HTTPException(status_code=response.status_code, detail="Failed to get GitHub token")
         except httpx.ConnectError:
             raise HTTPException(status_code=503, detail="Auth service unreachable")
         except HTTPException:

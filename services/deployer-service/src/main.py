@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import engine, Base
-from .models.deployment import Deployment
+from .models.deployment import Deployment  # noqa: F401
 from .routes import health, deployments, github
 
 app = FastAPI(
