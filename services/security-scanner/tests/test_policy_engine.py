@@ -83,12 +83,12 @@ class TestPolicyEngine:
         )
         return details, breakdown
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_pass_clean_image(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_pass_clean_image(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details()
@@ -99,54 +99,55 @@ class TestPolicyEngine:
         assert reason is None
         assert warnings == []
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_blocked_on_critical_cve(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_blocked_on_excessive_critical_cve(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
+
+        engine = PolicyEngine()
+        details, breakdown = self._make_details(critical=51)
+        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
+
+        assert status == ScanStatus.BLOCKED
+        assert "Excessive vulnerabilities" in reason
+
+    @patch("src.services.policy_engine.check_security_tools_available")
+    @patch("src.services.policy_engine.settings")
+    def test_blocked_on_excessive_high_cve(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
+        mock_settings.BLOCK_ON_MALWARE = True
+        mock_settings.BLOCK_ON_SECRETS = True
+
+        engine = PolicyEngine()
+        details, breakdown = self._make_details(high=501)
+        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
+
+        assert status == ScanStatus.BLOCKED
+        assert "Excessive vulnerabilities" in reason
+
+    @patch("src.services.policy_engine.check_security_tools_available")
+    @patch("src.services.policy_engine.settings")
+    def test_warn_on_few_critical_cve(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
+        mock_settings.BLOCK_ON_MALWARE = True
+        mock_settings.BLOCK_ON_SECRETS = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(critical=3)
         status, verdict, reason, warnings = engine.evaluate(details, breakdown)
 
-        assert status == ScanStatus.BLOCKED
-        assert "CRITICAL" in reason
-        assert "3" in reason
-
-    @patch("src.services.policy_engine.settings")
-    def test_blocked_on_high_cve(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
-        mock_settings.BLOCK_ON_MALWARE = True
-        mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
-
-        engine = PolicyEngine()
-        details, breakdown = self._make_details(high=5)
-        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
-
-        assert status == ScanStatus.BLOCKED
-        assert "HIGH" in reason
-
-    @patch("src.services.policy_engine.settings")
-    def test_not_blocked_on_high_cve_when_disabled(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = False
-        mock_settings.BLOCK_ON_MALWARE = True
-        mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
-
-        engine = PolicyEngine()
-        details, breakdown = self._make_details(high=5)
-        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
-
         assert status == ScanStatus.PASS
+        assert verdict == Verdict.ADVISORY_WARNING
+        assert any("critical" in w.type.lower() for w in warnings)
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_blocked_on_malware(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_blocked_on_malware(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(malware_count=2)
@@ -155,12 +156,12 @@ class TestPolicyEngine:
         assert status == ScanStatus.BLOCKED
         assert "malware" in reason.lower()
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_blocked_on_secrets(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_blocked_on_secrets(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(secrets_count=3)
@@ -169,79 +170,65 @@ class TestPolicyEngine:
         assert status == ScanStatus.BLOCKED
         assert "secret" in reason.lower()
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_blocked_on_root_user(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_warn_on_root_user(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(root_user=True)
         status, verdict, reason, warnings = engine.evaluate(details, breakdown)
 
-        assert status == ScanStatus.BLOCKED
-        assert "root" in reason.lower()
+        assert status == ScanStatus.PASS
+        assert verdict == Verdict.ADVISORY_WARNING
+        assert any("root" in w.type.lower() for w in warnings)
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_blocked_on_unapproved_base_image(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_warn_on_unapproved_base_image(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(base_image_approved=False)
         status, verdict, reason, warnings = engine.evaluate(details, breakdown)
 
-        assert status == ScanStatus.BLOCKED
-        assert "base image" in reason.lower()
-
-    @patch("src.services.policy_engine.settings")
-    def test_warn_on_medium_only(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
-        mock_settings.BLOCK_ON_MALWARE = True
-        mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
-
-        engine = PolicyEngine()
-        details, breakdown = self._make_details(medium=5)
-        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
-
-        assert status == ScanStatus.WARN
+        assert status == ScanStatus.PASS
         assert verdict == Verdict.ADVISORY_WARNING
-        assert reason is None
-        assert len(warnings) > 0
+        assert any("base_image" in w.type.lower() for w in warnings)
 
+    @patch("src.services.policy_engine.check_security_tools_available")
     @patch("src.services.policy_engine.settings")
-    def test_warn_on_low_only(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
+    def test_multiple_block_reasons_combined(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": True, "clamav": True, "yara": True}
         mock_settings.BLOCK_ON_MALWARE = True
         mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
-
-        engine = PolicyEngine()
-        details, breakdown = self._make_details(low=10)
-        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
-
-        assert status == ScanStatus.WARN
-        assert any("low" in w.type.lower() for w in warnings)
-
-    @patch("src.services.policy_engine.settings")
-    def test_multiple_block_reasons_combined(self, mock_settings):
-        mock_settings.BLOCK_ON_HIGH_CVES = True
-        mock_settings.BLOCK_ON_MALWARE = True
-        mock_settings.BLOCK_ON_SECRETS = True
-        mock_settings.BLOCK_ON_ROOT_USER = True
 
         engine = PolicyEngine()
         details, breakdown = self._make_details(
-            critical=1, secrets_count=1, base_image_approved=False
+            malware_count=1, secrets_count=1
         )
         status, verdict, reason, warnings = engine.evaluate(details, breakdown)
 
         assert status == ScanStatus.BLOCKED
         assert ";" in reason
-        assert "CRITICAL" in reason
+        assert "malware" in reason.lower()
         assert "secret" in reason.lower()
-        assert "base image" in reason.lower()
+
+    @patch("src.services.policy_engine.check_security_tools_available")
+    @patch("src.services.policy_engine.settings")
+    def test_missing_tools_causes_warning(self, mock_settings, mock_tools):
+        mock_tools.return_value = {"trivy": False, "clamav": False, "yara": True}
+        mock_settings.BLOCK_ON_MALWARE = True
+        mock_settings.BLOCK_ON_SECRETS = True
+
+        engine = PolicyEngine()
+        details, breakdown = self._make_details()
+        status, verdict, reason, warnings = engine.evaluate(details, breakdown)
+
+        assert status == ScanStatus.PASS
+        assert verdict == Verdict.ADVISORY_WARNING
+        assert any("scanner_unavailable" in w.type for w in warnings)

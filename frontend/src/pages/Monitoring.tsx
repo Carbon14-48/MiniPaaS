@@ -1,320 +1,185 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Activity,
-  Server,
-  FileText,
-  Settings,
-  RefreshCw,
-  Search,
-  ChevronRight,
-  LayoutDashboard,
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { monitoringApiService, type Metric, type LogEntry, type ContainerStatus } from '../lib/monitoringApi';
-import OverviewCards from '../components/monitoring/OverviewCards';
-import AppCharts from '../components/monitoring/AppCharts';
-import LogConsole from '../components/monitoring/LogConsole';
-import HealthGrid from '../components/monitoring/HealthGrid';
 
-type Tab = 'metrics' | 'logs' | 'health';
+interface Metric {
+  app_id: string;
+  user_id: number;
+  cpu_percent: number;
+  memory_percent: number;
+  status: string;
+  collected_at: string;
+}
 
 export default function Monitoring() {
-  const { user, accessToken, logout } = useAuth();
-
-  const [selectedApp, setSelectedApp] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>('metrics');
-  const [summary, setSummary] = useState<Metric[]>([]);
-  const [appMetrics, setAppMetrics] = useState<Metric[]>([]);
-  const [appLogs, setAppLogs] = useState<LogEntry[]>([]);
-  const [containers, setContainers] = useState<ContainerStatus[]>([]);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<string>('');
 
-  const userId = user?.id;
-  const uniqueApps = Array.from(
-    new Set(summary.filter(m => m.user_id === userId).map((m) => m.app_id))
-  ).filter((app) =>
-    app.toLowerCase().includes(sidebarSearch.toLowerCase())
-  );
+  console.log('[Monitoring] Component mounted');
 
-const fetchData = useCallback(async () => {
-    if (!accessToken) return;
-    setLoading(true);
+  const loadData = async () => {
+    console.log('[Monitoring] Loading data...');
     try {
-      const summaryData = await monitoringApiService.getSummary();
-      setSummary(summaryData || []);
-
-      try {
-        const containersData = await monitoringApiService.getAllContainers();
-        setContainers(containersData.containers || []);
-      } catch (e) {
-        setContainers([]);
+      const token = localStorage.getItem('minipaas_access_token');
+      const response = await fetch('/monitoring/metrics/summary', {
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      console.log('[Monitoring] Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-
-      if (!selectedApp && summaryData && summaryData.length > 0) {
-        const userApps = summaryData.filter(m => m.user_id === userId);
-        if (userApps.length > 0) {
-          setSelectedApp(userApps[0].app_id);
-        }
-      }
-    } catch (err) {
-      // Ignore
+      
+      const data = await response.json();
+      console.log('[Monitoring] Got data:', data.length, 'items');
+      setMetrics(data);
+      setLastUpdate(new Date().toLocaleTimeString());
+      setError(null);
+    } catch (err: any) {
+      console.error('[Monitoring] Error:', err);
+      setError(err.message || 'Failed to load');
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  useEffect(() => {
-    if (!selectedApp) return;
-    const fetchAppData = async () => {
-      try {
-        const [metricsData, logsData] = await Promise.all([
-          monitoringApiService.getAppMetrics(selectedApp),
-          monitoringApiService.getAppLogs(selectedApp),
-        ]);
-        setAppMetrics(metricsData || []);
-        setAppLogs(logsData || []);
-      } catch (err) {
-        // Ignore
-      }
-    };
-    fetchAppData();
-    const interval = setInterval(fetchAppData, 30000);
-    return () => clearInterval(interval);
-  }, [selectedApp]);
-
-  // Refresh app data when summary changes (new app added)
-  useEffect(() => {
-    if (!selectedApp || summary.length === 0) return;
-    const appExists = summary.some(m => m.app_id === selectedApp);
-    if (appExists && selectedApp) {
-      // Refresh metrics and logs for selected app
-      monitoringApiService.getAppMetrics(selectedApp).then(setAppMetrics).catch(() => {});
-      monitoringApiService.getAppLogs(selectedApp).then(setAppLogs).catch(() => {});
-    }
-  }, [summary, selectedApp]);
-
-  const handleLiveLogs = async () => {
-    if (!selectedApp) return;
-    try {
-      const liveData = await monitoringApiService.getLiveLogs(selectedApp);
-      const newLogs: LogEntry[] = (liveData.entries || []).map((entry, i) => ({
-        id: `live-${i}-${Date.now()}`,
-        app_id: selectedApp,
-        user_id: user?.id || 0,
-        level: 'INFO' as const,
-        message: entry,
-        log_timestamp: new Date().toISOString(),
-        collected_at: new Date().toISOString(),
-      }));
-      setAppLogs((prev) => [...prev, ...newLogs].slice(-500));
-    } catch (err) {
-      console.error('Failed to fetch live logs:', err);
-    }
   };
 
-  const tabs: { id: Tab; label: string; icon: typeof Activity }[] = [
-    { id: 'metrics', label: 'Metrics', icon: Activity },
-    { id: 'logs', label: 'Logs', icon: FileText },
-    { id: 'health', label: 'Health', icon: Server },
-  ];
+  useEffect(() => {
+    console.log('[Monitoring] useEffect triggered');
+    loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const runningCount = metrics.filter(m => m.status === 'running').length;
+  const totalCpu = metrics.reduce((acc, m) => acc + (m.cpu_percent || 0), 0);
+  const totalRam = metrics.reduce((acc, m) => acc + (m.memory_percent || 0), 0);
+  const avgCpu = metrics.length > 0 ? (totalCpu / metrics.length).toFixed(1) : '0';
+  const avgRam = metrics.length > 0 ? (totalRam / metrics.length).toFixed(1) : '0';
 
   return (
-    <div className="min-h-screen flex bg-bg-primary">
-      {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="w-64 xl:w-72 shrink-0 border-r border-border bg-bg-card/50 backdrop-blur-md flex flex-col"
-      >
-        {/* Logo */}
-        <div className="p-5 border-b border-border">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-xl font-bold text-gradient"
-          >
-            <LayoutDashboard className="w-5 h-5 text-accent-blue" />
-            <span className="bg-gradient-to-r from-accent-blue to-accent-cyan bg-clip-text text-transparent">
-              MiniPaaS
-            </span>
+    <div style={{ minHeight: '100vh', background: '#000', color: '#fff' }}>
+      {/* Header */}
+      <header style={{ background: '#111', borderBottom: '1px solid #333', padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          <Link to="/dashboard" style={{ color: '#fff', textDecoration: 'none', fontWeight: '700', fontSize: '20px', letterSpacing: '-0.5px' }}>
+            ◀ MiniPaaS
           </Link>
+          <nav style={{ display: 'flex', gap: '24px' }}>
+            <Link to="/dashboard" style={{ color: '#666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Dashboard</Link>
+            <Link to="/deployments" style={{ color: '#666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}>Deployments</Link>
+            <span style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>Monitoring</span>
+          </nav>
+        </div>
+        <button 
+          onClick={() => { setLoading(true); loadData(); }}
+          style={{ 
+            background: '#222', 
+            border: '1px solid #444', 
+            color: '#fff', 
+            padding: '10px 20px', 
+            borderRadius: '8px', 
+            cursor: 'pointer', 
+            fontSize: '14px',
+            transition: 'all 0.2s'
+          }}
+        >
+          ↻ Refresh
+        </button>
+      </header>
+
+      <main style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '200', letterSpacing: '-1px' }}>Monitoring</h1>
+          <span style={{ fontSize: '13px', color: '#555' }}>Updated: {lastUpdate || 'never'}</span>
         </div>
 
-        {/* Search */}
-        <div className="p-4 border-b border-border">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              value={sidebarSearch}
-              onChange={(e) => setSidebarSearch(e.target.value)}
-              placeholder="Search apps..."
-              className="input pl-10 py-2 text-sm"
-            />
+        {/* Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '40px' }}>
+          <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '36px', fontWeight: '200', color: '#fff', marginBottom: '4px' }}>{runningCount}</div>
+            <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Running</div>
+          </div>
+          <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '36px', fontWeight: '200', color: parseFloat(avgCpu) > 50 ? '#f59e0b' : '#fff', marginBottom: '4px' }}>{avgCpu}%</div>
+            <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Avg CPU</div>
+          </div>
+          <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '36px', fontWeight: '200', color: parseFloat(avgRam) > 50 ? '#f59e0b' : '#fff', marginBottom: '4px' }}>{avgRam}%</div>
+            <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Avg RAM</div>
+          </div>
+          <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ fontSize: '36px', fontWeight: '200', color: '#666', marginBottom: '4px' }}>{metrics.length}</div>
+            <div style={{ fontSize: '11px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Total</div>
           </div>
         </div>
 
-        {/* Apps List */}
-        <div className="flex-1 overflow-auto p-2">
-          <div className="mb-2 px-3 py-1">
-            <span className="text-text-muted text-xs font-medium uppercase tracking-wider">
-              Your Apps
-            </span>
+        {/* Error */}
+        {error && (
+          <div style={{ background: '#1a0000', border: '1px solid #ff3333', color: '#ff4444', padding: '20px', borderRadius: '12px', marginBottom: '24px', fontSize: '14px' }}>
+            ⚠️ Error: {error}
           </div>
-          {loading ? (
-            <div className="space-y-2 p-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-10 skeleton rounded-lg" />
-              ))}
-            </div>
-          ) : uniqueApps.length === 0 ? (
-            <div className="px-3 py-8 text-center">
-              <p className="text-text-muted text-sm">No apps found</p>
-            </div>
-          ) : (
-            uniqueApps.map((app) => {
-              const appData = summary.find((m) => m.app_id === app);
-              const isSelected = selectedApp === app;
-              return (
-                <button
-                  key={app}
-                  onClick={() => setSelectedApp(app)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group ${
-                    isSelected
-                      ? 'bg-accent-blue/10 text-accent-blue border border-accent-blue/30'
-                      : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  <motion.div
-                    animate={
-                      appData?.status === 'running'
-                        ? { scale: [1, 1.2, 1], opacity: [1, 0.6, 1] }
-                        : {}
-                    }
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className={`w-2 h-2 rounded-full ${
-                      appData?.status === 'running' ? 'bg-accent-green' : 'bg-text-muted'
-                    }`}
-                  />
-                  <span className="flex-1 truncate text-sm font-medium">{app}</span>
-                  {isSelected && (
-                    <ChevronRight className="w-4 h-4 text-accent-blue" />
-                  )}
-                </button>
-              );
-            })
-          )}
-        </div>
+        )}
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border space-y-2">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span className="text-sm">Dashboard</span>
-          </Link>
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary hover:text-accent-red hover:bg-accent-red/10 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="text-sm">Logout</span>
-          </button>
-        </div>
-      </motion.aside>
+        {/* Loading */}
+        {loading && (
+          <div style={{ color: '#444', padding: '60px', textAlign: 'center', fontSize: '14px' }}>
+            Loading metrics...
+          </div>
+        )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-16 shrink-0 border-b border-border bg-bg-card/50 backdrop-blur-md px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-text-primary">Monitoring</h1>
-            {selectedApp && (
-              <span className="px-3 py-1 text-sm rounded-full bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
-                {selectedApp}
-              </span>
+        {/* Table */}
+        {!loading && (
+          <div style={{ background: '#080808', border: '1px solid #1a1a1a', borderRadius: '16px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#111', borderBottom: '1px solid #222' }}>
+                  <th style={{ padding: '20px', textAlign: 'left', fontWeight: '500', color: '#444', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Application</th>
+                  <th style={{ padding: '20px', textAlign: 'left', fontWeight: '500', color: '#444', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Status</th>
+                  <th style={{ padding: '20px', textAlign: 'right', fontWeight: '500', color: '#444', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>CPU</th>
+                  <th style={{ padding: '20px', textAlign: 'right', fontWeight: '500', color: '#444', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Memory</th>
+                  <th style={{ padding: '20px', textAlign: 'right', fontWeight: '500', color: '#444', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Last Update</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.map((m, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #111' }}>
+                    <td style={{ padding: '20px', fontSize: '15px', fontWeight: '500' }}>{m.app_id}</td>
+                    <td style={{ padding: '20px' }}>
+                      <span style={{ 
+                        background: m.status === 'running' ? '#0a1a0a' : '#1a0a0a',
+                        color: m.status === 'running' ? '#00ff66' : '#ff4444',
+                        padding: '6px 12px', 
+                        borderRadius: '6px', 
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        {m.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '20px', textAlign: 'right', fontSize: '14px', fontFamily: 'monospace', color: '#888' }}>
+                      {m.cpu_percent?.toFixed(2)}%
+                    </td>
+                    <td style={{ padding: '20px', textAlign: 'right', fontSize: '14px', fontFamily: 'monospace', color: '#888' }}>
+                      {m.memory_percent?.toFixed(2)}%
+                    </td>
+                    <td style={{ padding: '20px', textAlign: 'right', fontSize: '12px', color: '#444' }}>
+                      {m.collected_at ? new Date(m.collected_at).toLocaleTimeString() : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {metrics.length === 0 && (
+              <div style={{ padding: '60px', textAlign: 'center', color: '#333', fontSize: '14px' }}>
+                No deployments found
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ rotate: 180 }}
-              transition={{ duration: 0.4 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={fetchData}
-              className="p-2 rounded-lg bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </motion.button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Overview Cards */}
-            <OverviewCards apps={summary} loading={loading} />
-
-            {/* Tabs */}
-            <div className="flex items-center gap-2 border-b border-border">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-accent-blue text-accent-blue'
-                      : 'border-transparent text-text-muted hover:text-text-primary'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {activeTab === 'metrics' && (
-                  <AppCharts metrics={appMetrics} loading={loading} />
-                )}
-                {activeTab === 'logs' && (
-                  <LogConsole
-                    logs={appLogs}
-                    loading={loading}
-                    appId={selectedApp || ''}
-                    onFetchLive={handleLiveLogs}
-                  />
-                )}
-                {activeTab === 'health' && (
-                  <HealthGrid
-                    containers={containers}
-                    loading={loading}
-                    selectedApp={selectedApp}
-                    onSelectApp={setSelectedApp}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </main>
-      </div>
+        )}
+      </main>
     </div>
   );
 }

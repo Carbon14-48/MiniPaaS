@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 import urllib.parse
+import httpx
 
 from src.db import get_db
 from src.models.image import RegistryImage
@@ -247,7 +248,6 @@ def health(db: Session = Depends(get_db)):
 
     # Vérifie que le registry:5000 est joignable
     try:
-        import httpx
         resp = httpx.get(f"{settings.registry_url}/v2/", timeout=3.0)
         registry_status = "ok" if resp.status_code in (200, 401) else "error"
     except Exception:

@@ -76,8 +76,13 @@ class TruffleHogScanner:
                 try:
                     entry = json.loads(line)
                     if "DetectorType" in entry or "DetectorName" in entry:
+                        # Skip generic detectors that often cause false positives in OS files
+                        detector_name = entry.get("DetectorName", "").lower()
+                        if detector_name in ["uri", "box"]:
+                            continue
+                            
                         secret = self._parse_entry(entry)
-                        if secret:
+                        if secret and self._is_app_secret(secret):
                             findings.append(secret)
                 except json.JSONDecodeError:
                     continue
@@ -98,8 +103,22 @@ class TruffleHogScanner:
         return findings
 
     def _fallback_scan(self, scan_path: str) -> list[Secret]:
-        """Fallback scan using regex patterns when TruffleHog is unavailable."""
+        """Fallback scan using regex patterns when TruffleHog is unavailable.
+        
+        Only scans application directories — skips OS/system directories to avoid
+        false positives from package documentation, config templates, etc.
+        """
         findings = []
+        
+        # Directories that contain APPLICATION CODE — scan these
+        app_dirs = {"app", "home", "srv", "src", "workspace", "code", "opt", "data", "var/www"}
+        
+        # Directories that are OS/system — SKIP these entirely
+        skip_dirs = {
+            "usr", "etc", "lib", "lib64", "sbin", "bin", "boot", "dev",
+            "proc", "sys", "run", "tmp", "root", "var/lib", "var/cache",
+            "var/log", "var/db", "var/spool"
+        }
         
         secret_file_patterns = [
             ".env",
@@ -121,7 +140,23 @@ class TruffleHogScanner:
         
         try:
             for root, dirs, files in os.walk(scan_path):
-                depth = root[len(scan_path):].count(os.sep)
+                rel_root = os.path.relpath(root, scan_path)
+                
+                # Skip OS/system directories
+                top_level = rel_root.split(os.sep)[0] if rel_root != "." else "."
+                if top_level in skip_dirs:
+                    dirs.clear()
+                    continue
+                
+                # Only descend into app directories or root
+                if rel_root != "." and top_level not in app_dirs:
+                    # Check if any parent dir matches app_dirs
+                    is_app_path = any(part in app_dirs for part in rel_root.split(os.sep))
+                    if not is_app_path:
+                        dirs.clear()
+                        continue
+                
+                depth = rel_root.count(os.sep)
                 if depth > 5:
                     dirs.clear()
                     continue
@@ -162,6 +197,17 @@ class TruffleHogScanner:
         """Simple glob-like pattern matching."""
         import fnmatch
         return fnmatch.fnmatch(name.lower(), pattern.lower()) or fnmatch.fnmatch(name, pattern)
+
+    def _is_app_secret(self, secret: Secret) -> bool:
+        """Check if a secret is in application code (not OS system files)."""
+        skip_prefixes = (
+            "usr/", "etc/", "lib/", "lib64/", "sbin/", "bin/", "boot/",
+            "dev/", "proc/", "sys/", "run/", "tmp/", "root/",
+            "var/lib", "var/cache", "var/log", "var/db", "var/spool",
+            "usr/", "etc/", "lib/",
+        )
+        file_path = secret.file.replace("\\", "/")
+        return not any(file_path.startswith(prefix) for prefix in skip_prefixes)
 
     def _parse_entry(self, entry: dict) -> Secret | None:
         """Parse a TruffleHog JSON entry into a Secret model."""

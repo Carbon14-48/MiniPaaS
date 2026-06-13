@@ -51,11 +51,15 @@ async def scan_image(image_tag: str, user_id: int, app_name: str) -> dict:
             )
             response.raise_for_status()
     except httpx.ConnectError:
-        # Scanner unavailable - skip scan but continue (log warning instead of blocking)
-        return {"status": "SKIPPED", "verdict": "scanner_unavailable", "policy_passed": True, "block_reason": None, "severity_breakdown": {"critical": 0, "high": 0, "medium": 0, "low": 0}, "warnings": ["Security scanner unavailable - scan skipped"]}
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "Security scanner unavailable - deployment blocked for safety", "status": "BLOCKED"}
+        )
     except httpx.HTTPStatusError as e:
-        # Scanner error - skip scan but continue
-        return {"status": "SKIPPED", "verdict": "scanner_error", "policy_passed": True, "block_reason": None, "severity_breakdown": {"critical": 0, "high": 0, "medium": 0, "low": 0}, "warnings": [f"Security scanner error: {e.response.text}"]}
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": f"Security scanner error: {e.response.text}", "status": "BLOCKED"}
+        )
 
     result = response.json()
 

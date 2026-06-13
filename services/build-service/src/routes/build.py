@@ -140,6 +140,8 @@ async def trigger_build(
         )
 
         # ── Étape 7 : Scanner l'image pour les CVE ────────────────────────────
+        # Use bare tag — image is already on local Docker daemon after build,
+        # not yet pushed to registry (push happens after scan)
         scan_result = await scan_image(
             image_tag=image_tag,
             user_id=user_id,

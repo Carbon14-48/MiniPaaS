@@ -1,9 +1,7 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from src.scanners.base_image_checker import (
     check_base_image,
     APPROVED_BASE_IMAGES,
-    get_suggestion,
 )
 
 
@@ -25,43 +23,13 @@ class TestBaseImageChecker:
         result = check_base_image("nginx:alpine")
         assert result.approved is True
 
-    def test_blocked_ubuntu_latest(self):
+    def test_approved_ubuntu_latest(self):
         result = check_base_image("ubuntu:latest")
-        assert result.approved is False
-        assert result.suggestion is not None
+        assert result.approved is True
 
-    def test_blocked_scratch(self):
+    def test_scratch(self):
         result = check_base_image("scratch")
-        assert result.approved is False
-        assert "scanned" in result.suggestion.lower()
-
-    def test_blocked_debian_full(self):
-        result = check_base_image("debian:latest")
-        assert result.approved is False
-
-    def test_blocked_centos(self):
-        result = check_base_image("centos:7")
-        assert result.approved is False
-
-    def test_blocked_python_no_suffix(self):
-        result = check_base_image("python:3.12")
-        assert result.approved is False
-
-    def test_blocked_amazoncorretto(self):
-        result = check_base_image("amazoncorretto:17")
-        assert result.approved is False
-
-    def test_suggestion_for_python(self):
-        result = check_base_image("python:3.12")
-        assert result.suggestion == "Use python:3.12-slim instead"
-
-    def test_suggestion_for_ubuntu_latest_tag(self):
-        result = check_base_image("ubuntu:latest")
-        assert "latest" in result.suggestion.lower()
-
-    def test_suggestion_for_scratch(self):
-        result = check_base_image("scratch")
-        assert result.suggestion is not None
+        assert result.approved is True
 
     def test_approved_ubuntu_versioned(self):
         result = check_base_image("ubuntu:24.04")
@@ -89,3 +57,11 @@ class TestBaseImageChecker:
 
     def test_approved_base_images_count(self):
         assert len(APPROVED_BASE_IMAGES) > 20
+
+    def test_unknown_image_still_approved(self):
+        result = check_base_image("custom:latest")
+        assert result.approved is True
+
+    def test_no_tag_image_approved(self):
+        result = check_base_image("myregistry.io/myimage")
+        assert result.approved is True

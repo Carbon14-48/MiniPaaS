@@ -37,6 +37,7 @@ class TrivyScanner:
                 "--format", "json",
                 "--output", output_path,
                 "--timeout", "180s",
+                "--skip-db-update",
                 image_tag,
             ]
 

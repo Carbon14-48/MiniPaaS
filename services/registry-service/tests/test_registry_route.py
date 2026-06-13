@@ -5,6 +5,7 @@ Tests des endpoints du registry-service.
 On mocke les appels Docker — pas besoin d'un vrai daemon pendant les tests.
 """
 import pytest
+import os
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from sqlalchemy import create_engine
@@ -14,27 +15,29 @@ from src.main import app
 from src.db import Base, get_db
 from src.models.image import RegistryImage
 
-# Base SQLite en mémoire pour les tests
-SQLALCHEMY_TEST_URL = "sqlite:///./test_registry.db"
-engine_test = create_engine(
-    SQLALCHEMY_TEST_URL,
-    connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine_test
-)
+DB_PATH = "./test_registry.db"
 
+@pytest.fixture(autouse=True)
+def setup_db():
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+    engine_test = create_engine(f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False})
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
 
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    def override_get_db():
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
 
+    app.dependency_overrides[get_db] = override_get_db
+    Base.metadata.create_all(bind=engine_test)
+    yield
+    app.dependency_overrides.clear()
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
 
-app.dependency_overrides[get_db] = override_get_db
-Base.metadata.create_all(bind=engine_test)
 client = TestClient(app)
 
 

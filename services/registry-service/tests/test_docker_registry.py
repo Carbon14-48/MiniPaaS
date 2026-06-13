@@ -80,7 +80,7 @@ def test_push_returns_registry_url_and_digest():
         result = push_to_registry("user42/myapp:v1")
 
         assert "registry_url" in result
-        assert result["registry_url"] == "registry:5000/user42/myapp:v1"
+        assert result["registry_url"] == "localhost:5000/user42/myapp:v1"
         assert result["digest"] == "sha256:abc123"
         assert result["size_bytes"] == 45000000
 

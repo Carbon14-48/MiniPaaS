@@ -47,6 +47,7 @@ export default function Repositories() {
             <div className="flex gap-4">
               <Link to="/dashboard" className="text-gray-300 hover:text-white transition">Dashboard</Link>
               <Link to="/deployments" className="text-gray-300 hover:text-white transition">Deployments</Link>
+              <Link to="/monitoring" className="text-gray-300 hover:text-white transition">Monitoring</Link>
               <Link to="/repos" className="text-white font-medium">Repositories</Link>
             </div>
           </div>

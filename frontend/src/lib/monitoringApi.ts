@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = '';
+const API_BASE = '/monitoring';
 const TOKEN_KEY = 'minipaas_access_token';
 
 const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);

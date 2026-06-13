@@ -88,7 +88,7 @@ services:
   registry-service:
     build: ./services/registry-service
     ports:
-      - "8007:8000"
+      - "8007:8005"
     environment:
       - DATABASE_URL=postgresql://minipaas:minipaas@postgres:5432/minipaas
       - REGISTRY_HOST=localhost:5000
@@ -103,7 +103,7 @@ services:
   monitoring-service:
     build: ./services/monitoring-service
     ports:
-      - "8005:8000"
+      - "8005:8006"
     environment:
       - DATABASE_URL=postgresql://minipaas:minipaas@postgres:5432/minipaas
     env_file: .env

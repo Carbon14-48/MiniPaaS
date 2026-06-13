@@ -64,7 +64,7 @@ def test_get_app_metrics_empty():
 
 def test_get_app_metrics_with_data():
     """Après insertion, les métriques apparaissent."""
-    _insert_metric(app_id="testapp1", user_id=10, cpu=55.0)
+    _insert_metric(app_id="testapp1", user_id=1, cpu=55.0)
     response = client.get("/metrics/testapp1")
     assert response.status_code == 200
     data = response.json()
@@ -75,9 +75,9 @@ def test_get_app_metrics_with_data():
 
 def test_get_user_metrics():
     """Les métriques d'un utilisateur incluent toutes ses apps."""
-    _insert_metric(app_id="app_a", user_id=99)
-    _insert_metric(app_id="app_b", user_id=99)
-    response = client.get("/metrics/user/99")
+    _insert_metric(app_id="app_a", user_id=1)
+    _insert_metric(app_id="app_b", user_id=1)
+    response = client.get("/metrics/user/1")
     assert response.status_code == 200
     data = response.json()
     app_ids = [m["app_id"] for m in data]
@@ -87,7 +87,7 @@ def test_get_user_metrics():
 
 def test_prometheus_format():
     """Le endpoint /metrics retourne du texte Prometheus valide."""
-    _insert_metric(app_id="promapp", user_id=77, cpu=12.5)
+    _insert_metric(app_id="promapp", user_id=1, cpu=12.5)
     response = client.get("/metrics")
     assert response.status_code == 200
     content = response.text
@@ -99,7 +99,7 @@ def test_prometheus_format():
 
 def test_metrics_summary():
     """Le résumé retourne des données agrégées."""
-    _insert_metric(app_id="summaryapp", user_id=55)
+    _insert_metric(app_id="summaryapp", user_id=1)
     response = client.get("/metrics/summary")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
@@ -107,7 +107,7 @@ def test_metrics_summary():
 
 def test_metrics_response_has_all_fields():
     """Chaque métrique contient tous les champs attendus."""
-    _insert_metric(app_id="fieldapp", user_id=33)
+    _insert_metric(app_id="fieldapp", user_id=1)
     response = client.get("/metrics/fieldapp")
     assert response.status_code == 200
     data = response.json()

@@ -19,9 +19,9 @@ def test_root():
 
 def test_deployments_requires_auth():
     response = client.get("/deployments/")
-    assert response.status_code == 422
+    assert response.status_code == 401
 
 
 def test_repos_requires_auth():
     response = client.get("/repos/")
-    assert response.status_code == 422
+    assert response.status_code == 401

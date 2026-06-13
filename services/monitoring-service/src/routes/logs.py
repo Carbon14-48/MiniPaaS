@@ -23,6 +23,11 @@ from src.services.docker_collector import (
 from src.services.log_collector import collect_container_logs
 from src.services.auth_client import verify_token
 
+import logging
+from src.config import settings
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/logs", tags=["logs"])
 
 
@@ -30,6 +35,10 @@ from typing import Optional
 
 
 def get_current_user(authorization: str = Header(None)) -> Optional[int]:
+    # Mode développement : si pas de token, on retourne 1 (user par défaut)
+    if settings.env == "development" and not authorization:
+        return 1
+        
     if not authorization:
         return None
     if authorization.startswith("Bearer "):
@@ -97,9 +106,12 @@ def get_app_logs(
 
     query = db.query(LogEntry).filter(
         LogEntry.app_id == app_id,
-        LogEntry.user_id == current_user,
         LogEntry.collected_at >= since,
     )
+    
+    # Filtrage par user_id uniquement si non-admin (user_id 0 = system/admin)
+    if current_user != 0:
+        query = query.filter(LogEntry.user_id == current_user)
 
     if level:
         query = query.filter(LogEntry.level == level.upper())
@@ -140,7 +152,7 @@ def get_app_logs_live(
     for c in containers:
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
-            if identity["user_id"] != current_user:
+            if identity["user_id"] != current_user and current_user != 0:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
             target = c
             break
@@ -184,7 +196,7 @@ def force_collect_logs(
     for c in containers:
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
-            if identity["user_id"] != current_user:
+            if identity["user_id"] != current_user and current_user != 0:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
             target = c
             break
@@ -232,7 +244,7 @@ def force_collect_logs(
 
 def _log_to_dict(l: LogEntry) -> dict:
     return {
-        "id": l.id,
+        "id": str(l.id),
         "app_id": l.app_id,
         "user_id": l.user_id,
         "container_id": l.container_id,
@@ -242,3 +254,4 @@ def _log_to_dict(l: LogEntry) -> dict:
         "log_timestamp": l.log_timestamp.isoformat() if l.log_timestamp else None,
         "collected_at": l.collected_at.isoformat(),
     }
+

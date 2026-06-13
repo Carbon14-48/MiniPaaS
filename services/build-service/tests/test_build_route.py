@@ -138,11 +138,14 @@ def test_build_blocked_by_scanner():
         mock_dockerfile.return_value = "python"
         mock_build.return_value = ("user42/myapp:v1", "Step 1/5...")
         mock_scan.return_value = {
+            "status": "BLOCKED",
+            "block_reason": "CVE-2024-1234 found (CRITICAL)",
             "critical": True,
             "cve": "CVE-2024-1234",
             "severity": "CRITICAL",
             "package": "libssl 1.0.1"
         }
+        mock_push.return_value = {"url": "registry:5000/user42/myapp:v1"}
 
         response = client.post(
             "/build",

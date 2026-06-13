@@ -1,22 +1,10 @@
-"""
-config.py
----------
-Toute la configuration du registry-service lue depuis .env
-"""
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Host du registry local SANS http:// — utilisé pour docker tag/push
-    registry_host: str = "172.18.0.4:5000"
-
-    # URL complète du registry — utilisée pour les health checks HTTP
-    registry_url: str = "http://172.18.0.4:5000"
-
-    # Base de données propre au registry-service
-    database_url: str = "postgresql://registryuser:registrypass@registry-db:5432/registrydb"
-
-    # Environnement
+    registry_host: str = "localhost:5000"
+    registry_url: str = "http://localhost:5000"
+    database_url: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
     env: str = "development"
 
     class Config:

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
 from src.routes import health, proxy
+from src.middleware.auth import verify_token
 
 app = FastAPI(
     title="MiniPaaS API Gateway",
@@ -16,6 +17,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.middleware("http")(verify_token)
 
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(proxy.router, tags=["proxy"])

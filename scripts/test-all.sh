@@ -10,7 +10,11 @@ for service in services/*/; do
         echo ""
         echo "Testing $(basename $service)..."
         cd "$service"
-        if pytest tests/ -v; then
+        PYTHON="pytest"
+        if [ -f "venv/bin/pytest" ]; then
+            PYTHON="./venv/bin/pytest"
+        fi
+        if $PYTHON tests/ -v; then
             echo "✅ $(basename $service) passed"
         else
             echo "❌ $(basename $service) failed"

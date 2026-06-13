@@ -36,6 +36,7 @@ export default function Dashboard() {
             <div className="flex gap-4">
               <Link to="/repos" className="text-gray-300 hover:text-white transition">Repositories</Link>
               <Link to="/deployments" className="text-gray-300 hover:text-white transition">Deployments</Link>
+              <Link to="/monitoring" className="text-gray-300 hover:text-white transition">Monitoring</Link>
               <Link to="/deploy/new" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium">+ New Deploy</Link>
             </div>
           </div>
@@ -50,6 +51,22 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto py-6 px-4">
         <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
+
+        {/* Monitoring Card - Prominent */}
+        <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-lg p-6 border border-purple-500 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">🔍 Monitoring</h2>
+              <p className="text-purple-200 text-sm mt-1">View CPU, RAM, logs and health of your deployed apps</p>
+            </div>
+            <Link
+              to="/monitoring"
+              className="px-6 py-3 bg-white text-purple-700 font-bold rounded-lg hover:bg-purple-100 transition shadow-lg"
+            >
+              Open Monitoring →
+            </Link>
+          </div>
+        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -83,9 +100,9 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/monitoring"
-              className="px-4 py-2 bg-accent-blue hover:bg-accent-blue/80 text-white rounded-lg transition"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium"
             >
-              Monitor Apps
+              🔍 Monitoring
             </Link>
             <Link
               to="/deployments"

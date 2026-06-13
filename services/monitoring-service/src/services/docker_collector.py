@@ -187,13 +187,17 @@ def parse_container_identity(container) -> dict:
     container_id = container.short_id
 
     # Priorité 1 : labels
-    app_id = labels.get("minipaas.app_id")
-    user_id_str = labels.get("minipaas.user_id", "0")
+    # On supporte les labels avec points (standard) et avec underscores (ceux du deployer actuel)
+    app_id = labels.get("minipaas.app_id") or labels.get("app_name")
+    user_id_str = labels.get("minipaas.user_id") or labels.get("user_id") or "0"
 
     if app_id:
-        return {"app_id": app_id, "user_id": int(user_id_str), "container_id": container_id}
+        try:
+            return {"app_id": app_id, "user_id": int(user_id_str), "container_id": container_id}
+        except ValueError:
+            return {"app_id": app_id, "user_id": 0, "container_id": container_id}
 
-    # Priorité 2 : convention minipaas_{user_id}_{app_name} ou minipaas-{user_id}-{app_name}
+    # Priorité 2 : convention minipaas-{user_id}-{app_name} ou minipaas_{user_id}_{app_name}
     if name.startswith("minipaas-"):
         parts = name.split("-", 2)
         if len(parts) >= 3:
@@ -201,7 +205,9 @@ def parse_container_identity(container) -> dict:
                 return {"app_id": "-".join(parts[2:]), "user_id": int(parts[1]), "container_id": container_id}
             except ValueError:
                 pass
-    elif name.startswith("minipaas_"):
+
+    # Also check for underscore naming convention
+    if name.startswith("minipaas_"):
         parts = name.split("_", 2)
         if len(parts) >= 3:
             try:

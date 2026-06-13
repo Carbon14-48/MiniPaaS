@@ -79,7 +79,6 @@ rule python_flask_backdoor {
         category = "webshell"
     strings:
         $s1 = "app.run(debug=True" nocase
-        $s2 = "debug=True" nocase
         $pin = "PIN" nocase
     condition:
         $s1 and $pin

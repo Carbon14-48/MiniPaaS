@@ -29,6 +29,12 @@ async def proxy(service: str, path: str, request: Request):
             target_url = f"{base_url}/{service}/{path}"
         else:
             target_url = f"{base_url}/{service}/"
+    elif service == "auth":
+        # Auth service uses /auth/ prefix in its routes
+        if path:
+            target_url = f"{base_url}/auth/{path}"
+        else:
+            target_url = f"{base_url}/auth/"
     elif service == "builds":
         # Build service uses /build endpoint
         if path:

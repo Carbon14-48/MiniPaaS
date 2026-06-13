@@ -1,11 +1,18 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
 from fastapi.responses import JSONResponse
 import jwt
 from src.config import settings
 
 
+PUBLIC_PATHS = {
+    "/", "/health", "/health/", "/docs", "/openapi.json",
+    "/auth/register", "/auth/login", "/auth/github", "/auth/callback",
+}
+
+
 async def verify_token(request: Request, call_next):
-    if request.url.path in ["/health", "/", "/docs", "/openapi.json"]:
+    path = request.url.path
+    if path in PUBLIC_PATHS:
         return await call_next(request)
 
     auth_header = request.headers.get("Authorization")

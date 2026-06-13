@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     DOCKER_SOCKET_PATH: str = "/var/run/docker.sock"
 
-    TRIVY_PATH: str = "/usr/bin/trivy"
+    TRIVY_PATH: str = "/usr/local/bin/trivy"
     YARA_RULES_DIR: str = "/rules"
     CLAMAV_DB_PATH: str = "/var/lib/clamav"
 
