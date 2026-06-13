@@ -1,4 +1,4 @@
-name: TypeScript Lint
+name: Lint
 
 on:
   push:
@@ -7,6 +7,26 @@ on:
     branches: [main]
 
 jobs:
+  gitleaks:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ruff:
+    name: Ruff check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v1
+        with:
+          src: services/
+
   ts:
     name: ESLint + tsc
     runs-on: ubuntu-latest
