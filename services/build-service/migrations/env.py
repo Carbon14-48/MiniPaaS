@@ -7,7 +7,8 @@ Ne pas modifier sauf si tu changes la structure de connexion.
 """
 
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
 from alembic import context
 import sys, os
 

@@ -26,7 +26,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
 
 from src.db import get_db
 from src.models.job import BuildJob, BuildStatus
