@@ -22,6 +22,11 @@ from sqlalchemy import func
 from src.db import get_db
 from src.models.metric import ContainerMetric
 from src.services.auth_client import verify_token
+from src.services.docker_collector import (
+    get_docker_client,
+    get_monitored_containers,
+    parse_container_identity,
+)
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
@@ -113,6 +118,18 @@ def get_metrics_summary(
             )
             .all()
         )
+
+    # Filter to only include apps whose containers are currently running
+    try:
+        client = get_docker_client()
+        if client:
+            running_apps = set()
+            for c in get_monitored_containers(client):
+                identity = parse_container_identity(c)
+                running_apps.add(identity["app_id"])
+            results = [r for r in results if r.app_id in running_apps]
+    except Exception:
+        pass  # If Docker is unreachable, return all DB results as fallback
 
     return [_metric_to_dict(m) for m in results]
 

@@ -82,6 +82,31 @@ def get_user_logs(
     return [_log_to_dict(l) for l in logs]
 
 
+# ── DELETE /logs/{app_id} ─────────────────────────────────────────────────────
+# Important: DOIT être avant GET /{app_id} pour le routage
+
+@router.delete("/{app_id}")
+def delete_app_logs(
+    app_id: str,
+    current_user: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Supprime tous les logs d'une application.
+    Appelé par le deployer-service quand un déploiement est supprimé.
+    """
+    deleted_logs = db.query(LogEntry).filter(
+        LogEntry.app_id == app_id,
+        LogEntry.user_id == current_user
+    ).delete()
+    db.commit()
+    return {
+        "status": "deleted",
+        "app_id": app_id,
+        "deleted_logs": deleted_logs
+    }
+
+
 # ── GET /logs/{app_id} ────────────────────────────────────────────────────────
 
 @router.get("/{app_id}")

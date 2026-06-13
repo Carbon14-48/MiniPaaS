@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     AUTH_SERVICE_URL: str = "http://auth-service:8000"
     BUILD_SERVICE_URL: str = "http://build-service:8002"
     REGISTRY_SERVICE_URL: str = "http://registry-service:8005"
+    MONITORING_SERVICE_URL: str = "http://monitoring-service:8006"
     
     DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
     

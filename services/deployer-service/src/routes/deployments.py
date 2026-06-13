@@ -10,6 +10,7 @@ from ..models.deployment import Deployment, DeploymentStatus
 from ..services.auth_client import verify_token
 from ..services.build_client import trigger_build, get_build_status
 from ..services.docker_runner import docker_runner
+from ..services.monitoring_client import cleanup_app_metrics
 from .github import get_github_token
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
@@ -274,6 +275,16 @@ async def delete_deployment(
     deployment.is_active = False
     
     db.commit()
+
+    # Clean up monitoring metrics/logs for this app
+    try:
+        deleted_metrics, deleted_logs = await cleanup_app_metrics(
+            token, deployment.app_name
+        )
+        logger.info(f"Cleaned up {deleted_metrics} metrics, {deleted_logs} logs for {deployment.app_name}")
+    except Exception as e:
+        logger.warning(f"Monitoring cleanup failed for {deployment.app_name}: {e}")
+
     return deployment
 
 
