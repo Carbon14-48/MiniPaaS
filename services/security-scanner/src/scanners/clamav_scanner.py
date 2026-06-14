@@ -65,40 +65,50 @@ class ClamavScanner:
 
         return findings
 
-    def _parse_output(self, output: str) -> list[MalwareFinding]:
-        """Parse ClamAV output and extract real malware findings."""
-        findings = []
+    def _is_non_malware_line(self, line: str) -> bool:
+        """Check if a line is a non-malware ClamAV message."""
         non_malware_prefixes = (
             "No ", "ERROR", "LibClamAV", "clamscan: ",
             "stream:", "Can't", "I/O", "database",
         )
+        return any(line.startswith(p) for p in non_malware_prefixes)
 
+    def _parse_finding_line(self, line: str) -> MalwareFinding | None:
+        """Parse a single ClamAV output line into a MalwareFinding if it contains a detection."""
+        if not line.strip():
+            return None
+        if self._is_non_malware_line(line):
+            return None
+        if "FOUND" not in line.upper():
+            return None
+
+        parts = line.split(":")
+        if len(parts) < 2:
+            return None
+
+        file_path = parts[0].strip()
+        signature = ":".join(parts[1:]).strip().replace("FOUND", "").strip()
+        if not file_path or not signature:
+            return None
+
+        return MalwareFinding(
+            rule=f"clamav:{signature}",
+            file=file_path,
+            signature=signature,
+            severity=Severity.CRITICAL,
+            category="malware",
+        )
+
+    def _parse_output(self, output: str) -> list[MalwareFinding]:
+        """Parse ClamAV output and extract real malware findings."""
+        findings = []
         for line in output.splitlines():
-            if not line.strip():
-                continue
-
-            # Skip non-malware lines
-            if any(line.startswith(p) for p in non_malware_prefixes):
-                continue
-
-            if "FOUND" in line_upper if (line_upper := line.upper()) else False:
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    file_path = parts[0].strip()
-                    signature = ":".join(parts[1:]).strip().replace("FOUND", "").strip()
-
-                    if file_path and signature:
-                        findings.append(MalwareFinding(
-                            rule=f"clamav:{signature}",
-                            file=file_path,
-                            signature=signature,
-                            severity=Severity.CRITICAL,
-                            category="malware",
-                        ))
-                        logger.warning(
-                            f"ClamAV detected malware: {file_path} — {signature}"
-                        )
-
+            finding = self._parse_finding_line(line)
+            if finding:
+                findings.append(finding)
+                logger.warning(
+                    f"ClamAV detected malware: {finding.file} — {finding.signature}"
+                )
         return findings
 
     def update_db(self) -> bool:

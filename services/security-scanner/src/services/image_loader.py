@@ -39,6 +39,18 @@ class ImageLoader:
         except Exception as e:
             raise RuntimeError(f"Failed to get base image for {image_tag}: {e}")
 
+    def _extract_base_name(self, image_info: dict) -> str | None:
+        """Extract the base image name from image info, using tags or labels."""
+        repo_tags = image_info.get("RepoTags", [])
+        if repo_tags:
+            return min(repo_tags, key=len)
+        config = image_info.get("config", {}) or {}
+        labels = config.get("Labels") or {}
+        for key in ["maintainer", "org.opencontainers.image.title"]:
+            if key in labels:
+                return labels[key]
+        return None
+
     def _find_base_image(self, image_tag: str) -> str:
         """Walk parent chain to find the original base image."""
         seen = set()
@@ -54,23 +66,8 @@ class ImageLoader:
                 parent_id = info.get("Parent", "")
 
                 if not parent_id:
-                    # This is the base image
-                    # Try to get the image name from the tags
-                    image_info = self.client.api.inspect_image(current)
-                    repo_tags = image_info.get("RepoTags", [])
-                    if repo_tags:
-                        # Find the shortest tag (usually the base image name)
-                        return min(repo_tags, key=len)
-                    # Fallback: try to get from architecture/config
-                    config = image_info.get("config", {})
-                    if "Labels" in config:
-                        labels = config["Labels"] or {}
-                        for key in ["maintainer", "org.opencontainers.image.title"]:
-                            if key in labels:
-                                return labels[key]
-                    return current
+                    return self._extract_base_name(info) or current
 
-                # Move to parent
                 current = self._resolve_image_id(parent_id)
             except Exception:
                 break

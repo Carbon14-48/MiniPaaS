@@ -25,7 +25,9 @@ export default function Login() {
     try {
       const { url } = await authApi.githubAuthUrl();
       setGithubUrl(url);
-      window.location.href = url;
+      if (url.startsWith('https://github.com/login/oauth/authorize')) {
+        window.location.href = url;
+      }
     } catch {
       clearError();
     }

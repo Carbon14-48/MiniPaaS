@@ -37,6 +37,18 @@ from src.services.registry_client import push_image
 
 router = APIRouter()
 
+BEARER_PREFIX = "Bearer "
+INVALID_AUTH_MSG = "Header Authorization invalide. Format attendu : Bearer <token>"
+
+
+def extract_token(authorization: str) -> str:
+    if not authorization.startswith(BEARER_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=INVALID_AUTH_MSG,
+        )
+    return authorization.removeprefix(BEARER_PREFIX).strip()
+
 
 # ─── Schémas Pydantic (validation des données entrantes/sortantes) ──────────
 
@@ -82,17 +94,8 @@ async def trigger_build(
     auth → clone → dockerfile → build → scan → push → sauvegarde → réponse
     """
 
-    # ── Étape 1 : Extraire le token du header Authorization ──────────────────
-    # Header format attendu : "Bearer eyJhbGci..."
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header Authorization invalide. Format attendu : Bearer <token>"
-        )
-    token = authorization.removeprefix("Bearer ").strip()
-
-    # ── Étape 2 : Vérifier le JWT auprès de l'auth-service ──────────────────
-    # Si invalide → lève automatiquement HTTPException 401
+    # ── Étape 1&2 : Extraire et vérifier le JWT ──────────────────────────────
+    token = extract_token(authorization)
     user_id = await verify_token(token)
 
     # ── Étape 3 : Créer le job en base avec status "pending" ─────────────────
@@ -220,12 +223,7 @@ async def get_my_builds(
     Liste tous les builds d'un utilisateur, du plus récent au plus ancien.
     Utile pour afficher l'historique dans le dashboard frontend.
     """
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header Authorization invalide. Format attendu : Bearer <token>",
-        )
-    token = authorization.removeprefix("Bearer ").strip()
+    token = extract_token(authorization)
     user_id = await verify_token(token)
 
     jobs = db.query(BuildJob).filter(
@@ -255,12 +253,7 @@ async def get_build(
     Retourne le statut et les détails d'un build existant.
     Utilisé par le Gateway pour que l'utilisateur consulte ses builds.
     """
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Header Authorization invalide. Format attendu : Bearer <token>",
-        )
-    token = authorization.removeprefix("Bearer ").strip()
+    token = extract_token(authorization)
     user_id = await verify_token(token)
 
     job = db.query(BuildJob).filter(BuildJob.job_id == job_id).first()

@@ -4,6 +4,7 @@ import os
 import logging
 import shutil
 import re
+import fnmatch
 from pathlib import Path
 
 from src.models.findings import Secret
@@ -100,100 +101,76 @@ class TruffleHogScanner:
         return findings
 
     def _fallback_scan(self, scan_path: str) -> list[Secret]:
-        """Fallback scan using regex patterns when TruffleHog is unavailable.
-        
-        Only scans application directories — skips OS/system directories to avoid
-        false positives from package documentation, config templates, etc.
-        """
         findings = []
-        
-        # Directories that contain APPLICATION CODE — scan these
         app_dirs = {"app", "home", "srv", "src", "workspace", "code", "opt", "data", "var/www"}
-        
-        # Directories that are OS/system — SKIP these entirely
         skip_dirs = {
             "usr", "etc", "lib", "lib64", "sbin", "bin", "boot", "dev",
             "proc", "sys", "run", "tmp", "root", "var/lib", "var/cache",
             "var/log", "var/db", "var/spool"
         }
-        
         secret_file_patterns = [
-            ".env",
-            ".env.*",
-            ".aws/**",
-            "*.pem",
-            "*.key",
-            "id_rsa",
-            "id_ed25519",
-            "credentials",
-            ".git-credentials",
-            ".npmrc",
-            ".pypirc",
-            "config.json",
-            "secrets.yaml",
-            "secrets.yml",
-            "secrets.toml",
+            ".env", ".env.*", ".aws/**", "*.pem", "*.key", "id_rsa",
+            "id_ed25519", "credentials", ".git-credentials", ".npmrc",
+            ".pypirc", "config.json", "secrets.yaml", "secrets.yml", "secrets.toml",
         ]
-        
         try:
             for root, dirs, files in os.walk(scan_path):
-                rel_root = os.path.relpath(root, scan_path)
-                
-                # Skip OS/system directories
-                top_level = rel_root.split(os.sep)[0] if rel_root != "." else "."
-                if top_level in skip_dirs:
-                    dirs.clear()
+                if not self._should_descend(root, scan_path, dirs, skip_dirs, app_dirs):
                     continue
-                
-                # Only descend into app directories or root
-                if rel_root != "." and top_level not in app_dirs:
-                    # Check if any parent dir matches app_dirs
-                    is_app_path = any(part in app_dirs for part in rel_root.split(os.sep))
-                    if not is_app_path:
-                        dirs.clear()
-                        continue
-                
-                depth = rel_root.count(os.sep)
-                if depth > 5:
-                    dirs.clear()
-                    continue
-                
                 for filename in files:
-                    filepath = os.path.join(root, filename)
-                    rel_path = os.path.relpath(filepath, scan_path)
-                    
-                    should_scan = False
-                    for pattern in secret_file_patterns:
-                        if self._match_pattern(filename, pattern) or self._match_pattern(rel_path, pattern):
-                            should_scan = True
-                            break
-                    
-                    if should_scan and os.path.getsize(filepath) < 1024 * 1024:
-                        try:
-                            content = Path(filepath).read_text(errors="ignore")
-                            for secret_type, pattern in SECRET_PATTERNS.items():
-                                matches = pattern.finditer(content)
-                                for match in matches:
-                                    findings.append(Secret(
-                                        type=secret_type,
-                                        file=rel_path,
-                                        line=match.start(),
-                                        description=f"Pattern match: {match.group()[:50]}",
-                                        matched_value=match.group()[:50],
-                                    ))
-                        except Exception as e:
-                            logger.debug(f"Could not read {filepath}: {e}")
+                    finding = self._scan_file(root, filename, scan_path, secret_file_patterns)
+                    if finding:
+                        findings.append(finding)
         except Exception as e:
             logger.error(f"Fallback scan failed: {e}")
-        
         if findings:
             logger.info(f"Fallback scan found {len(findings)} secrets")
         return findings
 
-    def _match_pattern(self, name: str, pattern: str) -> bool:
-        """Simple glob-like pattern matching."""
-        import fnmatch
-        return fnmatch.fnmatch(name.lower(), pattern.lower()) or fnmatch.fnmatch(name, pattern)
+    def _should_descend(self, root: str, scan_path: str, dirs: list[str], skip_dirs: set, app_dirs: set) -> bool:
+        rel_root = os.path.relpath(root, scan_path)
+        top_level = rel_root.split(os.sep)[0] if rel_root != "." else "."
+        if top_level in skip_dirs:
+            dirs.clear()
+            return False
+        if rel_root != "." and top_level not in app_dirs:
+            is_app_path = any(part in app_dirs for part in rel_root.split(os.sep))
+            if not is_app_path:
+                dirs.clear()
+                return False
+        depth = rel_root.count(os.sep)
+        if depth > 5:
+            dirs.clear()
+            return False
+        return True
+
+    def _scan_file(self, root: str, filename: str, scan_path: str, patterns: list[str]) -> Secret | None:
+        filepath = os.path.join(root, filename)
+        rel_path = os.path.relpath(filepath, scan_path)
+        if not self._matches_any_pattern(filename, rel_path, patterns):
+            return None
+        if os.path.getsize(filepath) >= 1024 * 1024:
+            return None
+        try:
+            content = Path(filepath).read_text(errors="ignore")
+            for secret_type, pattern in SECRET_PATTERNS.items():
+                for match in pattern.finditer(content):
+                    return Secret(
+                        type=secret_type,
+                        file=rel_path,
+                        line=match.start(),
+                        description=f"Pattern match: {match.group()[:50]}",
+                        matched_value=match.group()[:50],
+                    )
+        except Exception as e:
+            logger.debug(f"Could not read {filepath}: {e}")
+        return None
+
+    def _matches_any_pattern(self, filename: str, rel_path: str, patterns: list[str]) -> bool:
+        for pattern in patterns:
+            if fnmatch.fnmatch(filename.lower(), pattern.lower()) or fnmatch.fnmatch(rel_path, pattern):
+                return True
+        return False
 
     def _is_app_secret(self, secret: Secret) -> bool:
         """Check if a secret is in application code (not OS system files)."""

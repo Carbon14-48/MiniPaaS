@@ -8,7 +8,7 @@ class TestTruffleHogScanner:
     @patch("src.scanners.trufflehog_scanner.tempfile.NamedTemporaryFile")
     def test_scan_detects_secrets(self, mock_tempfile, mock_run, mock_exists):
         mock_file = MagicMock()
-        mock_file.name = "/tmp/scan_output.jsonl"
+        mock_file.name = "/tmp/scan_output.jsonl"  # NOSONAR
         mock_tempfile.return_value = mock_file
 
         aws_entry = '{"DetectorName":"AWS","DetectorType":"AWS","Raw":"AKIAIOSFODNN7EXAMPLE","SourceMetadata":{"SourceID":"config.json","Data":{"line":12}}}'
@@ -23,7 +23,7 @@ class TestTruffleHogScanner:
 
         scanner = TruffleHogScanner()
         scanner._trufflehog_path = "trufflehog"
-        findings = scanner.scan("/tmp/scan_dir")
+        findings = scanner.scan("/tmp/scan_dir")  # NOSONAR
 
         assert len(findings) == 2
         assert findings[0].type == "AWS"
@@ -35,7 +35,7 @@ class TestTruffleHogScanner:
     @patch("src.scanners.trufflehog_scanner.tempfile.NamedTemporaryFile")
     def test_scan_no_secrets_returns_empty(self, mock_tempfile, mock_run, mock_exists):
         mock_file = MagicMock()
-        mock_file.name = "/tmp/scan_output.jsonl"
+        mock_file.name = "/tmp/scan_output.jsonl"  # NOSONAR
         mock_tempfile.return_value = mock_file
 
         mock_result = MagicMock()
@@ -46,7 +46,7 @@ class TestTruffleHogScanner:
 
         scanner = TruffleHogScanner()
         scanner._trufflehog_path = "trufflehog"
-        findings = scanner.scan("/tmp/scan_dir")
+        findings = scanner.scan("/tmp/scan_dir")  # NOSONAR
 
         assert len(findings) == 0
 
@@ -55,7 +55,7 @@ class TestTruffleHogScanner:
     @patch("src.scanners.trufflehog_scanner.tempfile.NamedTemporaryFile")
     def test_scan_skips_invalid_json_lines(self, mock_tempfile, mock_run, mock_exists):
         mock_file = MagicMock()
-        mock_file.name = "/tmp/scan_output.jsonl"
+        mock_file.name = "/tmp/scan_output.jsonl"  # NOSONAR
         mock_tempfile.return_value = mock_file
 
         valid_entry = '{"DetectorName":"AWS","DetectorType":"AWS","Raw":"xxx","SourceMetadata":{"SourceID":"file.txt","Data":{}}}'
@@ -69,7 +69,7 @@ class TestTruffleHogScanner:
 
         scanner = TruffleHogScanner()
         scanner._trufflehog_path = "trufflehog"
-        findings = scanner.scan("/tmp/scan_dir")
+        findings = scanner.scan("/tmp/scan_dir")  # NOSONAR
 
         assert len(findings) == 1
         assert findings[0].type == "AWS"

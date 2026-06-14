@@ -14,6 +14,20 @@ SERVICE_URLS = {
     "scanner": settings.SECURITY_SCANNER_URL,
 }
 
+SERVICE_PATH_PREFIX = {
+    "deployments": "/deployments",
+    "repos": "/repos",
+    "auth": "/auth",
+    "builds": "/build",
+}
+
+
+def _build_target_url(service: str, path: str, base_url: str) -> str:
+    prefix = SERVICE_PATH_PREFIX.get(service, "")
+    if prefix:
+        return f"{base_url}{prefix}/{path}" if path else f"{base_url}{prefix}/"
+    return f"{base_url}/{path}"
+
 
 @router.api_route("/{service}/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def proxy(service: str, path: str, request: Request):
@@ -21,28 +35,7 @@ async def proxy(service: str, path: str, request: Request):
         raise HTTPException(status_code=404, detail=f"Unknown service: {service}")
     
     base_url = SERVICE_URLS[service].rstrip('/')
-    # For deployments/repos: need /deployments/path (service name in URL)
-    # For builds: use /build (not /builds)
-    # For others (monitoring, auth): need /path (no service name)
-    if service in ("deployments", "repos"):
-        if path:
-            target_url = f"{base_url}/{service}/{path}"
-        else:
-            target_url = f"{base_url}/{service}/"
-    elif service == "auth":
-        # Auth service uses /auth/ prefix in its routes
-        if path:
-            target_url = f"{base_url}/auth/{path}"
-        else:
-            target_url = f"{base_url}/auth/"
-    elif service == "builds":
-        # Build service uses /build endpoint
-        if path:
-            target_url = f"{base_url}/build/{path}"
-        else:
-            target_url = f"{base_url}/build/"
-    else:
-        target_url = f"{base_url}/{path}"
+    target_url = _build_target_url(service, path, base_url)
     
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
     

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import Optional
 import logging
@@ -15,6 +15,7 @@ from .github import get_github_token
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 logger = logging.getLogger(__name__)
+NOT_FOUND = "Deployment not found"
 
 
 class DeploymentCreate(BaseModel):
@@ -164,7 +165,7 @@ async def create_deployment(
                 deployment.host_port = container_info["host_port"]
                 deployment.container_url = container_info["container_url"]
                 deployment.status = DeploymentStatus.RUNNING
-                deployment.started_at = datetime.utcnow()
+                deployment.started_at = datetime.now(timezone.utc)
             except Exception as e:
                 deployment.status = DeploymentStatus.FAILED
                 deployment.error_message = f"Container start failed: {str(e)}"
@@ -227,19 +228,19 @@ async def get_deployment(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if deployment.container_id and deployment.status == DeploymentStatus.RUNNING:
         status = docker_runner.get_container_status(deployment.container_id)
         if status.get("status") == "not_found":
             deployment.status = DeploymentStatus.STOPPED
-            deployment.stopped_at = datetime.utcnow()
+            deployment.stopped_at = datetime.now(timezone.utc)
             db.commit()
         elif status.get("status") == "running":
             deployment.status = DeploymentStatus.RUNNING
         elif status.get("status") == "exited":
             deployment.status = DeploymentStatus.STOPPED
-            deployment.stopped_at = datetime.utcnow()
+            deployment.stopped_at = datetime.now(timezone.utc)
             db.commit()
     
     return deployment
@@ -261,7 +262,7 @@ async def delete_deployment(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if deployment.container_id:
         try:
@@ -271,7 +272,7 @@ async def delete_deployment(
     
     deployment.status = DeploymentStatus.STOPPED
     deployment.container_id = None
-    deployment.stopped_at = datetime.utcnow()
+    deployment.stopped_at = datetime.now(timezone.utc)
     deployment.is_active = False
     
     db.commit()
@@ -304,7 +305,7 @@ async def stop_deployment(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if deployment.container_id:
         try:
@@ -313,7 +314,7 @@ async def stop_deployment(
             pass
     
     deployment.status = DeploymentStatus.STOPPED
-    deployment.stopped_at = datetime.utcnow()
+    deployment.stopped_at = datetime.now(timezone.utc)
     
     db.commit()
     return deployment
@@ -335,7 +336,7 @@ async def start_deployment(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if not deployment.image_tag:
         from fastapi import HTTPException
@@ -355,7 +356,7 @@ async def start_deployment(
         deployment.host_port = container_info["host_port"]
         deployment.container_url = container_info["container_url"]
         deployment.status = DeploymentStatus.RUNNING
-        deployment.started_at = datetime.utcnow()
+        deployment.started_at = datetime.now(timezone.utc)
         
         db.commit()
         return deployment
@@ -384,7 +385,7 @@ async def get_deployment_logs(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if deployment.build_logs:
         return {"logs": deployment.build_logs, "source": "build"}
@@ -412,7 +413,7 @@ async def restart_deployment(
     
     if not deployment:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Deployment not found")
+        raise HTTPException(status_code=404, detail=NOT_FOUND)
     
     if deployment.container_id:
         try:
@@ -441,7 +442,7 @@ async def restart_deployment(
         deployment.host_port = container_info["host_port"]
         deployment.container_url = container_info["container_url"]
         deployment.status = DeploymentStatus.RUNNING
-        deployment.started_at = datetime.utcnow()
+        deployment.started_at = datetime.now(timezone.utc)
         
         db.commit()
         return deployment

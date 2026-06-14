@@ -6,6 +6,15 @@ interface OverviewCardsProps {
   loading: boolean;
 }
 
+function thresholdColor(value: number, over80: string, over50: string, under: string): string {
+  return value > 80 ? over80 : value > 50 ? over50 : under;
+}
+
+function thresholdGradient(value: number, over80: string, over50: string, under: string): string {
+  const color = thresholdColor(value, over80, over50, under);
+  return `from-${color}/20`;
+}
+
 export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
   const runningApps = apps.filter((a) => a.status === 'running').length;
   const avgCpu =
@@ -30,15 +39,15 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
       label: 'Avg CPU',
       value: `${avgCpu.toFixed(1)}%`,
       icon: Cpu,
-      color: avgCpu > 80 ? 'accent-red' : avgCpu > 50 ? 'accent-orange' : 'accent-blue',
-      gradient: `from-${avgCpu > 80 ? 'accent-red' : avgCpu > 50 ? 'accent-orange' : 'accent-blue'}/20`,
+      color: thresholdColor(avgCpu, 'accent-red', 'accent-orange', 'accent-blue'),
+      gradient: thresholdGradient(avgCpu, 'accent-red', 'accent-orange', 'accent-blue'),
     },
     {
       label: 'Avg RAM',
       value: `${avgRam.toFixed(1)}%`,
       icon: HardDrive,
-      color: avgRam > 80 ? 'accent-red' : avgRam > 50 ? 'accent-orange' : 'accent-purple',
-      gradient: `from-${avgRam > 80 ? 'accent-red' : avgRam > 50 ? 'accent-orange' : 'accent-purple'}/20`,
+      color: thresholdColor(avgRam, 'accent-red', 'accent-orange', 'accent-purple'),
+      gradient: thresholdGradient(avgRam, 'accent-red', 'accent-orange', 'accent-purple'),
     },
     {
       label: 'Alerts',

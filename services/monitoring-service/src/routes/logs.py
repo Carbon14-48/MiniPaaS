@@ -30,6 +30,7 @@ from src.config import settings
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/logs", tags=["logs"])
+ACCESS_DENIED = "Accès refusé"
 
 
 def get_current_user(authorization: str = Header(None)) -> Optional[int]:
@@ -64,7 +65,7 @@ def get_user_logs(
     Un utilisateur ne peut voir que ses propres logs.
     """
     if current_user != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ACCESS_DENIED)
 
     since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
@@ -176,7 +177,7 @@ def get_app_logs_live(
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
             if identity["user_id"] != current_user and current_user != 0:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ACCESS_DENIED)
             target = c
             break
 
@@ -220,7 +221,7 @@ def force_collect_logs(
         identity = parse_container_identity(c)
         if identity["app_id"] == app_id:
             if identity["user_id"] != current_user and current_user != 0:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ACCESS_DENIED)
             target = c
             break
 

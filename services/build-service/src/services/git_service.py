@@ -23,6 +23,7 @@ Le dossier /tmp/builds/job_a3f9c1/ contiendra alors :
 
 import os
 import shutil
+import time
 from git import Repo, GitCommandError
 from fastapi import HTTPException, status
 from src.config import settings
@@ -61,23 +62,29 @@ def clone_repo(repo_url: str, job_id: str, branch: str = "main", github_token: s
         if repo_url.startswith("https://github.com/"):
             repo_url = repo_url.replace("https://github.com/", f"https://{github_token}@github.com/")
 
-    try:
-        # Clone le repo sur la branche demandée
-        # depth=1 = ne prend que le dernier commit (plus rapide, moins lourd)
-        Repo.clone_from(
-            repo_url,
-            clone_path,
-            branch=branch,
-            depth=1
-        )
-    except GitCommandError as e:
-        # Repo introuvable, URL incorrecte, repo privé sans accès, etc.
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Impossible de cloner le repo : {str(e)}"
-        )
+    last_error = None
+    for attempt in range(3):
+        try:
+            Repo.clone_from(
+                repo_url,
+                clone_path,
+                branch=branch,
+                depth=1
+            )
+            return clone_path
+        except GitCommandError as e:
+            last_error = e
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+                if os.path.exists(clone_path):
+                    shutil.rmtree(clone_path)
+                continue
+            break
 
-    return clone_path
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Impossible de cloner le repo : {str(last_error)}"
+    )
 
 
 def cleanup_repo(job_id: str) -> None:

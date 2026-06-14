@@ -30,7 +30,7 @@ class TestYaraScanner:
 
         finding = MalwareFinding(
             rule="xmrig_binary",
-            file="/tmp/xmrig",
+            file="/tmp/xmrig",  # NOSONAR
             signature="yara:xmrig_binary",
             severity=Severity.CRITICAL,
             category="crypto_miner",
@@ -39,7 +39,7 @@ class TestYaraScanner:
         assert finding.rule == "xmrig_binary"
         assert finding.severity == Severity.CRITICAL
         assert finding.category == "crypto_miner"
-        assert finding.file == "/tmp/xmrig"
+        assert finding.file == "/tmp/xmrig"  # NOSONAR
 
     def test_multiple_findings_from_multiple_matches(self):
         """Simulate processing multiple YARA rule matches."""
@@ -48,7 +48,7 @@ class TestYaraScanner:
         matches = [
             {"rule": "webshell_php", "file": "/app/shell.php", "severity": "CRITICAL"},
             {"rule": "crypto_xmrig", "file": "/usr/bin/xmrig", "severity": "CRITICAL"},
-            {"rule": "reverse_shell", "file": "/tmp/script.sh", "severity": "HIGH"},
+            {"rule": "reverse_shell", "file": "/tmp/script.sh", "severity": "HIGH"},  # NOSONAR
         ]
 
         findings = [

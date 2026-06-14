@@ -170,6 +170,42 @@ def get_monitored_containers(client) -> list:
     return list(monitored.values())
 
 
+def _parse_from_labels(container, container_id: str) -> dict | None:
+    """Try to extract identity from Docker labels."""
+    labels = container.labels or {}
+    app_id = labels.get("minipaas.app_id") or labels.get("app_name")
+    user_id_str = labels.get("minipaas.user_id") or labels.get("user_id") or "0"
+    if not app_id:
+        return None
+    try:
+        return {"app_id": app_id, "user_id": int(user_id_str), "container_id": container_id}
+    except ValueError:
+        return {"app_id": app_id, "user_id": 0, "container_id": container_id}
+
+
+def _parse_from_naming(name: str, container_id: str) -> dict | None:
+    """Try to extract identity from minipaas naming conventions."""
+    if name.startswith("minipaas-"):
+        parts = name.split("-", 2)
+        if len(parts) >= 3:
+            try:
+                return {"app_id": "-".join(parts[2:]), "user_id": int(parts[1]), "container_id": container_id}
+            except ValueError:
+                pass
+
+    if name.startswith("minipaas_"):
+        parts = name.split("_", 2)
+        if len(parts) >= 3:
+            try:
+                return {"app_id": parts[2], "user_id": int(parts[1]), "container_id": container_id}
+            except ValueError:
+                pass
+        elif len(parts) == 2:
+            return {"app_id": parts[1], "user_id": 0, "container_id": container_id}
+
+    return None
+
+
 def parse_container_identity(container) -> dict:
     """
     Extrait app_id et user_id depuis un container.
@@ -182,40 +218,15 @@ def parse_container_identity(container) -> dict:
 
     Retourne dict avec app_id, user_id et container_id
     """
-    labels = container.labels or {}
-    name = container.name.lstrip("/")
     container_id = container.short_id
 
-    # Priorité 1 : labels
-    # On supporte les labels avec points (standard) et avec underscores (ceux du deployer actuel)
-    app_id = labels.get("minipaas.app_id") or labels.get("app_name")
-    user_id_str = labels.get("minipaas.user_id") or labels.get("user_id") or "0"
+    result = _parse_from_labels(container, container_id)
+    if result:
+        return result
 
-    if app_id:
-        try:
-            return {"app_id": app_id, "user_id": int(user_id_str), "container_id": container_id}
-        except ValueError:
-            return {"app_id": app_id, "user_id": 0, "container_id": container_id}
+    name = container.name.lstrip("/")
+    result = _parse_from_naming(name, container_id)
+    if result:
+        return result
 
-    # Priorité 2 : convention minipaas-{user_id}-{app_name} ou minipaas_{user_id}_{app_name}
-    if name.startswith("minipaas-"):
-        parts = name.split("-", 2)
-        if len(parts) >= 3:
-            try:
-                return {"app_id": "-".join(parts[2:]), "user_id": int(parts[1]), "container_id": container_id}
-            except ValueError:
-                pass
-
-    # Also check for underscore naming convention
-    if name.startswith("minipaas_"):
-        parts = name.split("_", 2)
-        if len(parts) >= 3:
-            try:
-                return {"app_id": parts[2], "user_id": int(parts[1]), "container_id": container_id}
-            except ValueError:
-                pass
-        elif len(parts) == 2:
-            return {"app_id": parts[1], "user_id": 0, "container_id": container_id}
-
-    # Fallback : nom complet comme app_id
     return {"app_id": name, "user_id": 0, "container_id": container_id}

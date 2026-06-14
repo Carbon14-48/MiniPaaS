@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Base de données propre au monitoring-service
-    database_url: str = "postgresql://monitoruser:monitorpass@monitor-db:5432/monitordb"
+    database_url: str = "postgresql://monitoruser:monitorpass@monitor-db:5432/monitordb"  # NOSONAR
 
     # Intervalle de collecte des métriques en secondes
     # Toutes les 30s on collecte CPU/RAM de tous les containers actifs

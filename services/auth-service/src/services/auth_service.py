@@ -5,7 +5,7 @@ from src.models.user import User
 from src.config import settings
 import httpx
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 
 
@@ -46,14 +46,14 @@ def create_access_token(data: dict, expires_minutes: int = None) -> str:
     if expires_minutes is None:
         expires_minutes = settings.JWT_ACCESS_TOKEN_EXPIRATION_MINUTES
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.REFRESH_TOKEN_SECRET, algorithm=settings.REFRESH_TOKEN_ALGORITHM)
 

@@ -61,6 +61,53 @@ def _extract_image(image_tag: str, dest_dir: str) -> bool:
             pass
 
 
+def _resolve_base_image_raw(image_tag: str):
+    """Resolve the base image string for a given image tag using Docker's parent chain."""
+    client = docker.from_env()
+    try:
+        image_info = client.api.inspect_image(image_tag)
+        base_str = _resolve_base_from_info(image_info, image_tag, client)
+        if not base_str:
+            base_str = image_tag
+        return check_base_image(base_str)
+    except Exception as e:
+        logger.warning(f"Failed to determine base image: {e}")
+        return check_base_image(image_tag)
+    finally:
+        client.close()
+
+
+def _resolve_base_from_info(image_info: dict, image_tag: str, client) -> str | None:
+    """Try to extract a base image name from image info using tags and parent chain."""
+    img_tags = image_info.get("RepoTags", [])
+    if img_tags:
+        return img_tags[0]
+
+    parent_id = image_info.get("Parent", "")
+    if not parent_id:
+        return image_tag
+
+    return _resolve_base_from_parent(parent_id, image_tag, client)
+
+
+def _resolve_base_from_parent(parent_id: str, fallback: str, client) -> str | None:
+    """Walk up one level in the parent chain to find a tag."""
+    try:
+        parent_image = client.api.inspect_image(parent_id)
+        parent_tags = parent_image.get("RepoTags", [])
+        if parent_tags:
+            return parent_tags[0]
+        grandparent_id = parent_image.get("Parent", "")
+        if grandparent_id:
+            grandparent_image = client.api.inspect_image(grandparent_id)
+            grandparent_tags = grandparent_image.get("RepoTags", [])
+            if grandparent_tags:
+                return grandparent_tags[0]
+    except Exception:
+        pass
+    return None
+
+
 def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
     """Run all scanners and return raw results."""
     trivy = TrivyScanner()
@@ -86,48 +133,7 @@ def _run_full_scan(image_tag: str, extract_dir: str) -> dict:
     misconfigs = dockle.scan(image_tag)
     logger.info(f"Dockle: found {len(misconfigs)} misconfigurations")
 
-    base_image_raw = None
-    try:
-        client = docker.from_env()
-        try:
-            image_info = client.api.inspect_image(image_tag)
-            
-            base_str = None
-            
-            img_tags = image_info.get("RepoTags", [])
-            if img_tags:
-                base_str = img_tags[0]
-            
-            if not base_str:
-                parent_id = image_info.get("Parent", "")
-                if not parent_id:
-                    base_str = image_tag
-                else:
-                    try:
-                        parent_image = client.api.inspect_image(parent_id)
-                        parent_tags = parent_image.get("RepoTags", [])
-                        if parent_tags:
-                            base_str = parent_tags[0]
-                        else:
-                            grandparent_id = parent_image.get("Parent", "")
-                            if grandparent_id:
-                                grandparent_image = client.api.inspect_image(grandparent_id)
-                                grandparent_tags = grandparent_image.get("RepoTags", [])
-                                if grandparent_tags:
-                                    base_str = grandparent_tags[0]
-                    except Exception:
-                        base_str = image_tag
-            
-            if not base_str:
-                base_str = image_tag
-            
-            base_image_raw = check_base_image(base_str)
-        finally:
-            client.close()
-        logger.info(f"Base image check: {base_image_raw}")
-    except Exception as e:
-        logger.warning(f"Failed to determine base image: {e}")
-        base_image_raw = check_base_image(image_tag)
+    base_image_raw = _resolve_base_image_raw(image_tag)
 
     return {
         "vulnerabilities": trivy_vulns,

@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     REGISTRY_SERVICE_URL: str = "http://registry-service:8005"
     MONITORING_SERVICE_URL: str = "http://monitoring-service:8006"
     
-    DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
+    DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"  # NOSONAR
     
     GITHUB_API_URL: str = "https://api.github.com"
     

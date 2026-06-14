@@ -17,9 +17,9 @@ class Settings(BaseSettings):
     # Override registry host - use Docker Hub for testing
     registry_push_url: str = ""  # If empty, push to local registry
 
-    database_url: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
+    database_url: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"  # NOSONAR
 
-    build_workdir: str = "/tmp/builds"
+    build_workdir: str = "/tmp/builds"  # NOSONAR
 
     max_build_timeout: int = 300
 

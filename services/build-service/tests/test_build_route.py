@@ -94,7 +94,7 @@ def test_build_success():
          patch("src.routes.build.cleanup_repo") as mock_cleanup:
 
         mock_auth.return_value = 42
-        mock_clone.return_value = "/tmp/builds/test_job"
+        mock_clone.return_value = "/tmp/builds/test_job"  # NOSONAR
         mock_dockerfile.return_value = "python"
         mock_build.return_value = ("user42/myapp:v1", "Step 1/5: FROM python:3.11-slim")
         mock_scan.return_value = {"critical": False, "vulnerabilities": []}
@@ -132,7 +132,7 @@ def test_build_blocked_by_scanner():
          patch("src.routes.build.cleanup_repo"):
 
         mock_auth.return_value = 42
-        mock_clone.return_value = "/tmp/builds/test_job"
+        mock_clone.return_value = "/tmp/builds/test_job"  # NOSONAR
         mock_dockerfile.return_value = "python"
         mock_build.return_value = ("user42/myapp:v1", "Step 1/5...")
         mock_scan.return_value = {

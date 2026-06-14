@@ -49,61 +49,69 @@ class YaraScanner:
             logger.error(f"Failed to compile YARA rules: {e}")
             self._compiled_rules = None
 
+    def _get_matches(self, scan_path: str) -> list:
+        """Run YARA matching against the scan path."""
+        if os.path.isdir(scan_path):
+            return self._compiled_rules.match(scan_path, timeout=120)
+        if os.path.isfile(scan_path):
+            return self._compiled_rules.match(scan_path, timeout=60)
+        logger.warning(f"Scan path does not exist: {scan_path}")
+        return []
+
+    def _parse_severity(self, rule_meta: dict) -> Severity:
+        """Parse severity from rule metadata with fallback."""
+        severity_str = rule_meta.get("severity", "CRITICAL")
+        try:
+            return Severity(severity_str.upper())
+        except ValueError:
+            return Severity.CRITICAL
+
+    def _process_file_matches(self, match, scan_path: str) -> list[MalwareFinding]:
+        """Process all file matches for a single YARA match."""
+        findings = []
+        rule_name = match.rule
+        severity = self._parse_severity(match.meta)
+        category = match.meta.get("category", "malware")
+
+        for matched_file in match.files:
+            for _ in matched_file.strings:
+                finding = MalwareFinding(
+                    rule=rule_name,
+                    file=matched_file.path or str(scan_path),
+                    signature=f"yara:{rule_name}",
+                    severity=severity,
+                    category=category,
+                )
+                findings.append(finding)
+                logger.warning(
+                    f"YARA rule '{rule_name}' matched in "
+                    f"{matched_file.path or scan_path}"
+                )
+        return findings
+
     def scan(self, scan_path: str) -> list[MalwareFinding]:
         """
         Scan a file or directory using compiled YARA rules.
         Returns list of malware findings.
         """
-        findings = []
-
         if not YARA_AVAILABLE:
             logger.warning("yara-python not available — skipping YARA scan")
-            return findings
+            return []
 
         if self._compiled_rules is None:
             self._compile_rules()
 
         if self._compiled_rules is None:
-            return findings
+            return []
 
         try:
-            if os.path.isdir(scan_path):
-                matches = self._compiled_rules.match(scan_path, timeout=120)
-            elif os.path.isfile(scan_path):
-                matches = self._compiled_rules.match(scan_path, timeout=60)
-            else:
-                logger.warning(f"Scan path does not exist: {scan_path}")
-                return findings
-
+            matches = self._get_matches(scan_path)
+            findings = []
             for match in matches:
-                rule_meta = match.meta
-                rule_name = match.rule
-
-                severity_str = rule_meta.get("severity", "CRITICAL")
-                try:
-                    severity = Severity(severity_str.upper())
-                except ValueError:
-                    severity = Severity.CRITICAL
-
-                category = rule_meta.get("category", "malware")
-
-                for matched_file in match.files:
-                    for string_match in matched_file.strings:
-                        finding = MalwareFinding(
-                            rule=rule_name,
-                            file=matched_file.path or str(scan_path),
-                            signature=f"yara:{rule_name}",
-                            severity=severity,
-                            category=category,
-                        )
-                        findings.append(finding)
-                        logger.warning(
-                            f"YARA rule '{rule_name}' matched in "
-                            f"{matched_file.path or scan_path}"
-                        )
-
+                findings.extend(self._process_file_matches(match, scan_path))
         except Exception as e:
             logger.error(f"YARA scan failed: {e}")
+            return []
 
         return findings
 
