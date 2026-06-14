@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 import httpx
+from urllib.parse import quote
 from src.config import settings
 
 router = APIRouter()
@@ -23,10 +24,11 @@ SERVICE_PATH_PREFIX = {
 
 
 def _build_target_url(service: str, path: str, base_url: str) -> str:
+    safe_path = quote(path.lstrip("/"), safe="/-._~") if path else ""
     prefix = SERVICE_PATH_PREFIX.get(service, "")
     if prefix:
-        return f"{base_url}{prefix}/{path}" if path else f"{base_url}{prefix}/"
-    return f"{base_url}/{path}"
+        return f"{base_url}{prefix}/{safe_path}" if safe_path else f"{base_url}{prefix}/"
+    return f"{base_url}/{safe_path}" if safe_path else f"{base_url}/"
 
 
 @router.api_route("/{service}/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

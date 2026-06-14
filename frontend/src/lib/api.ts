@@ -9,6 +9,7 @@ import type {
 const API_BASE = '';
 const DEPLOYER_BASE = '';
 const TOKEN_KEY = 'minipaas_access_token';
+const DEPLOYMENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 let refreshTokenFn: (() => Promise<boolean>) | null = null;
 
@@ -18,6 +19,14 @@ export const setTokenRefreshFn = (fn: () => Promise<boolean>) => {
 
 const getToken = (): string | null => {
   return localStorage.getItem(TOKEN_KEY);
+};
+
+const sanitizeDeploymentId = (id: string): string => {
+  const trimmed = id.trim();
+  if (!DEPLOYMENT_ID_PATTERN.test(trimmed)) {
+    throw new Error('Invalid deployment id');
+  }
+  return encodeURIComponent(trimmed);
 };
 
 const api = axios.create({
@@ -192,7 +201,8 @@ export const deployerApiService = {
   },
 
   getDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
-    const response = await deployerApi.get<Deployment>(`/deployments/${id}`, {
+    const safeId = sanitizeDeploymentId(id);
+    const response = await deployerApi.get<Deployment>(`/deployments/${safeId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: true,
     });
@@ -211,7 +221,8 @@ export const deployerApiService = {
   },
 
   stopDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
-    const response = await deployerApi.post<Deployment>(`/deployments/${id}/stop`, {}, {
+    const safeId = sanitizeDeploymentId(id);
+    const response = await deployerApi.post<Deployment>(`/deployments/${safeId}/stop`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: true,
     });
@@ -219,7 +230,8 @@ export const deployerApiService = {
   },
 
   startDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
-    const response = await deployerApi.post<Deployment>(`/deployments/${id}/start`, {}, {
+    const safeId = sanitizeDeploymentId(id);
+    const response = await deployerApi.post<Deployment>(`/deployments/${safeId}/start`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: true,
     });
@@ -227,7 +239,8 @@ export const deployerApiService = {
   },
 
   restartDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
-    const response = await deployerApi.post<Deployment>(`/deployments/${id}/restart`, {}, {
+    const safeId = sanitizeDeploymentId(id);
+    const response = await deployerApi.post<Deployment>(`/deployments/${safeId}/restart`, {}, {
       headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: true,
     });
@@ -235,7 +248,8 @@ export const deployerApiService = {
   },
 
   deleteDeployment: async (accessToken: string, id: string): Promise<Deployment> => {
-    const response = await deployerApi.delete<Deployment>(`/deployments/${id}`, {
+    const safeId = sanitizeDeploymentId(id);
+    const response = await deployerApi.delete<Deployment>(`/deployments/${safeId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       withCredentials: true,
     });
@@ -243,8 +257,9 @@ export const deployerApiService = {
   },
 
   getDeploymentLogs: async (accessToken: string, id: string, tail = 100): Promise<{ logs: string; source: string }> => {
+    const safeId = sanitizeDeploymentId(id);
     const response = await deployerApi.get<{ logs: string; source: string }>(
-      `/deployments/${id}/logs?tail=${tail}`,
+      `/deployments/${safeId}/logs?tail=${tail}`,
       { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
     );
     return response.data;

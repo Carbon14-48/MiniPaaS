@@ -9,6 +9,12 @@ interface DeploymentCardProps {
   onViewLogs?: (id: string) => void;
 }
 
+function safeUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return '';
+}
+
 export default function DeploymentCard({
   deployment,
   onStop,
@@ -71,7 +77,7 @@ export default function DeploymentCard({
           <div className="flex justify-between">
             <span className="text-gray-400">URL:</span>
             <a
-              href={deployment.container_url || `http://localhost:${deployment.host_port}`}
+              href={safeUrl(deployment.container_url) || `http://localhost:${deployment.host_port}`}
               target="_blank"
               rel="noopener noreferrer"
               className={`${statusTextColors[deployment.status]} hover:underline`}

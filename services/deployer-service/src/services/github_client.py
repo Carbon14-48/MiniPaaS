@@ -1,4 +1,5 @@
 import httpx
+from urllib.parse import quote
 from ..config import settings
 
 
@@ -40,10 +41,12 @@ async def get_user_repos(token: str, page: int = 1, per_page: int = 30) -> list[
 
 
 async def get_repo_branches(token: str, owner: str, repo: str) -> list[dict]:
+    safe_owner = quote(owner.strip(), safe="-._~")
+    safe_repo = quote(repo.strip(), safe="-._~")
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
             response = await client.get(
-                f"{settings.GITHUB_API_URL}/repos/{owner}/{repo}/branches",
+                f"{settings.GITHUB_API_URL}/repos/{safe_owner}/{safe_repo}/branches",
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Accept": "application/vnd.github.v3+json"

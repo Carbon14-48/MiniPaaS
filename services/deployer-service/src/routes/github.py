@@ -2,11 +2,13 @@ from fastapi import APIRouter, Query, Header, HTTPException
 from typing import Optional
 from pydantic import BaseModel
 import httpx
+import re
 
 from ..config import settings
 from ..services.github_client import get_user_repos, get_repo_branches
 
 router = APIRouter(prefix="/repos", tags=["github"])
+OWNER_REPO_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 
 
 class RepoResponse(BaseModel):
@@ -77,6 +79,10 @@ async def list_branches(
     repo: str = None
 ):
     token = get_token_from_header(authorization)
+    if not owner or not OWNER_REPO_PATTERN.fullmatch(owner):
+        raise HTTPException(status_code=400, detail="Invalid owner")
+    if not repo or not OWNER_REPO_PATTERN.fullmatch(repo):
+        raise HTTPException(status_code=400, detail="Invalid repo")
     github_token = await get_github_token(token)
     branches = await get_repo_branches(github_token, owner, repo)
     return branches
