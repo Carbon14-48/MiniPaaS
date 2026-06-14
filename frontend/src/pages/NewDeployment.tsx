@@ -3,6 +3,24 @@ import { useAuth } from '../context/AuthContext';
 import { deployerApiService, GitHubBranch } from '../lib/api';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 
+function getDeploymentErrorMessage(err: unknown): string {
+  if (typeof err !== 'object' || err === null) {
+    return 'Failed to create deployment';
+  }
+
+  const candidate = err as {
+    response?: { data?: { detail?: unknown } };
+    message?: string;
+  };
+  const detail = candidate.response?.data?.detail;
+
+  if (typeof detail === 'string') return detail;
+  if (detail !== undefined) return JSON.stringify(detail);
+  if (typeof candidate.message === 'string') return candidate.message;
+
+  return 'Failed to create deployment';
+}
+
 export default function NewDeployment() {
   const { accessToken } = useAuth();
   const navigate = useNavigate();
@@ -72,14 +90,8 @@ export default function NewDeployment() {
       } else {
         navigate(`/deployments`);
       }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || err.message || 'Failed to create deployment';
-      // Handle nested error messages
-      if (typeof errorMsg === 'object') {
-        setError(JSON.stringify(errorMsg));
-      } else {
-        setError(errorMsg);
-      }
+    } catch (err: unknown) {
+      setError(getDeploymentErrorMessage(err));
       console.error(err);
     } finally {
       setDeploying(false);

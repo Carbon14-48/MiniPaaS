@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ALLOWED_ORIGINS: list[str] = ["*"]
 
-    DATABASE_URL: str = "postgresql://cloudoku:cloudoku@postgres:5432/cloudoku"
+    DATABASE_URL: str = "postgresql://postgres@postgres:5432/cloudoku"
 
     BUILD_SERVICE_URL: str = "http://build-service:8003"
     DEPLOYMENT_SERVICE_URL: str = "http://deployment-service:8004"

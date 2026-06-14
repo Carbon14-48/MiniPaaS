@@ -4,6 +4,12 @@ import { deployerApiService, GitHubRepo } from '../lib/api';
 import RepoCard from '../components/ui/RepoCard';
 import { useNavigate, Link } from 'react-router-dom';
 
+function isUnauthorizedError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const candidate = err as { response?: { status?: number } };
+  return candidate.response?.status === 401;
+}
+
 export default function Repositories() {
   const { accessToken } = useAuth();
   const navigate = useNavigate();
@@ -22,8 +28,8 @@ export default function Repositories() {
       setError(null);
       const data = await deployerApiService.getRepos(accessToken);
       setRepos(data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      if (isUnauthorizedError(err)) {
         setError('GitHub authorization expired. Please login with GitHub again.');
       } else {
         setError('Failed to load repositories');

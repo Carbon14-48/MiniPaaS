@@ -12,6 +12,18 @@ import {
 import { motion } from 'framer-motion';
 import type { Metric } from '../../lib/monitoringApi';
 
+interface TooltipEntry {
+  dataKey?: string;
+  color?: string;
+  value?: number;
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  label?: string;
+  payload?: TooltipEntry[];
+}
+
 interface AppChartsProps {
   metrics: Metric[];
   loading: boolean;
@@ -31,14 +43,14 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
       .reverse();
   }, [metrics]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-bg-card border border-border rounded-lg p-3 shadow-card-hover">
         <p className="text-text-secondary text-xs mb-2">{label}</p>
-        {payload.map((entry: any) => (
+        {payload.map((entry) => (
           <div
-            key={entry.dataKey}
+            key={entry.dataKey ?? `tooltip-${entry.color ?? 'line'}`}
             className="flex items-center justify-between gap-4"
           >
             <div className="flex items-center gap-2">
@@ -49,7 +61,7 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
               <span className="text-text-primary text-sm">{entry.dataKey}</span>
             </div>
             <span className="text-text-primary font-medium">
-              {entry.value.toFixed(1)}%
+              {(entry.value ?? 0).toFixed(1)}%
             </span>
           </div>
         ))}

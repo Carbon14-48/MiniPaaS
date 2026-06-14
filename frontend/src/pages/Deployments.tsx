@@ -5,6 +5,12 @@ import DeploymentCard from '../components/ui/DeploymentCard';
 import LogViewer from '../components/ui/LogViewer';
 import { Link, useNavigate } from 'react-router-dom';
 
+function getStatusCode(err: unknown): number | null {
+  if (typeof err !== 'object' || err === null) return null;
+  const candidate = err as { response?: { status?: number }; status?: number };
+  return candidate.response?.status ?? candidate.status ?? null;
+}
+
 export default function Deployments() {
   const { accessToken, logout } = useAuth();
   const navigate = useNavigate();
@@ -21,8 +27,8 @@ export default function Deployments() {
       setDeployments(data.deployments);
       setError(null);
       setLastRefresh(new Date());
-    } catch (err: any) {
-      if (err?.response?.status === 401 || err?.status === 401) {
+    } catch (err: unknown) {
+      if (getStatusCode(err) === 401) {
         setError('Session expired. Please login again.');
         setTimeout(() => {
           logout();

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { deployerApiService } from '../lib/api';
+import { deployerApiService, type Deployment } from '../lib/api';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user, logout, refreshAccessToken, accessToken, refreshToken } = useAuth();
-  const [deployments, setDeployments] = useState<any[]>([]);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
 
   useEffect(() => {
     if (accessToken) {

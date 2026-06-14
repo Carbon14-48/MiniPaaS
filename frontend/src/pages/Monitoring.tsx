@@ -10,6 +10,10 @@ interface Metric {
   collected_at: string;
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Failed to load';
+}
+
 export default function Monitoring() {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +41,9 @@ export default function Monitoring() {
       setMetrics(data);
       setLastUpdate(new Date().toLocaleTimeString());
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Monitoring] Error:', err);
-      setError(err.message || 'Failed to load');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,11 @@ import { motion } from 'framer-motion';
 import { Server, Cpu, HardDrive, AlertCircle } from 'lucide-react';
 
 interface OverviewCardsProps {
-  apps: any[];
+  apps: {
+    status: string;
+    cpu_percent?: number;
+    memory_percent?: number;
+  }[];
   loading: boolean;
 }
 
@@ -25,7 +29,7 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
     apps.length > 0
       ? apps.reduce((acc, a) => acc + (a.memory_percent || 0), 0) / apps.length
       : 0;
-  const alerts = apps.filter((a) => a.cpu_percent > 80 || a.memory_percent > 80).length;
+  const alerts = apps.filter((a) => (a.cpu_percent ?? 0) > 80 || (a.memory_percent ?? 0) > 80).length;
 
   const cards = [
     {
