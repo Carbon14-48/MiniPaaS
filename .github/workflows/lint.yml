@@ -20,6 +20,7 @@ jobs:
 
   ruff:
     name: Ruff check
+    needs: gitleaks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +30,7 @@ jobs:
 
   ts:
     name: ESLint + tsc
+    needs: ruff
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,11 +43,12 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - run: npx eslint src/
+      - run: npx eslint src/ --max-warnings=0
       - run: npx tsc --noEmit
 
   sonarcloud:
     name: SonarCloud
+    needs: ts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +64,10 @@ jobs:
       - run: npm run test:coverage
         working-directory: frontend
       - uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
