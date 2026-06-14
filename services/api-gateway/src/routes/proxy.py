@@ -69,7 +69,3 @@ async def proxy(service: str, path: str, request: Request):
         raise HTTPException(status_code=503, detail=f"Service {service} unreachable")
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Gateway timeout")
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail=f"Service {service} unreachable")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Gateway timeout")
