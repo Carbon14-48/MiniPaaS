@@ -1,3 +1,4 @@
+# checkov:skip=CKV_DOCKER_3:requires root for Docker socket access
 FROM python:3.12-slim
 
 WORKDIR /app

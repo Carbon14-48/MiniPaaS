@@ -2,6 +2,7 @@
 # Ce fichier sert à containeriser LE BUILD-SERVICE lui-même.
 # (différent des Dockerfiles qu'il génère pour les apps utilisateurs)
 
+# checkov:skip=CKV_DOCKER_3:requires root for Docker socket access
 FROM python:3.11-slim
 
 WORKDIR /app
