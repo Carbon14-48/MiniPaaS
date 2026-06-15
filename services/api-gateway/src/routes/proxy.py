@@ -41,8 +41,8 @@ async def proxy(service: str, path: str, request: Request):
     
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
     
-    # Builds + scanning can take several minutes
-    timeout = 600.0 if service == "builds" else 30.0
+    # Builds + scanning + deployments can take several minutes
+    timeout = 600.0 if service in ("builds", "deployments") else 30.0
     
     try:
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:

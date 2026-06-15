@@ -6,6 +6,7 @@ COPY . .
 RUN npm run build
 
 FROM nginx:alpine
+RUN apk upgrade --no-cache
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 # checkov:skip=CKV_DOCKER_3:nginx master process needs root to bind to port 80 and write to /var/cache/nginx
