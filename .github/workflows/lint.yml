@@ -108,19 +108,14 @@ jobs:
           framework: dockerfile
           quiet: true
 
-  build:
-    name: Build images
+  build-and-scan:
+    name: Build & scan images
     needs: lint-docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: docker compose build
 
-  scan-images:
-    name: Trivy + Dockle
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Trivy scan all images
         run: |
           failed=0
@@ -137,12 +132,14 @@ jobs:
 
       - name: Dockle scan all images
         run: |
+          failed=0
           for img in $(docker images --format "{{.Repository}}" | grep minipaas); do
             echo "=== Dockle $img ==="
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               goodwithtech/dockle \
               --exit-code 1 \
-              "$img" || true
+              "$img" || failed=1
           done
+          [ "$failed" -eq 0 ] || exit 1
 
 
