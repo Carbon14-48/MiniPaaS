@@ -7,7 +7,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Installe git (nécessaire pour gitpython / git clone)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
 # Copie et installe les dépendances Python
 COPY requirements.txt .

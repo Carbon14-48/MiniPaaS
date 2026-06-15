@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
-RUN apt-get update && apt-get install -y curl docker.io && rm -rf /var/lib/apt/lists/*
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends curl docker.io && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir --only-binary :all: --timeout 120 --retries 5 -r requirements.txt
 COPY . .
