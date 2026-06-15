@@ -3,6 +3,8 @@ import os
 import subprocess
 from typing import Optional
 
+from src.config import settings
+
 from src.models.findings import (
     ScanDetails,
     SeverityBreakdown,
@@ -26,7 +28,7 @@ def check_security_tools_available() -> dict:
     
     # Check Trivy
     try:
-        result = subprocess.run(["/usr/local/bin/trivy", "version"], 
+        result = subprocess.run([settings.TRIVY_PATH, "version"], 
                                 capture_output=True, timeout=10)
         tools["trivy"] = result.returncode == 0
     except Exception:
