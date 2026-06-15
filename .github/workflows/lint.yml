@@ -123,6 +123,7 @@ jobs:
             echo "=== Scanning $img ==="
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               -v /tmp/trivy-cache:/root/.cache/trivy \
+              -v $PWD/.trivyignore:/root/.trivyignore \
               aquasec/trivy image \
               --severity HIGH,CRITICAL \
               --exit-code 1 \
