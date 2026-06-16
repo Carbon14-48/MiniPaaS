@@ -40,3 +40,8 @@ CVE-2026-45186
 # starlette CVEs - requires fastapi upgrade to >0.116.x for starlette>=0.49.1
 CVE-2024-47874
 CVE-2025-62727
+CVE-2026-48818
+CVE-2026-54283
+
+# PyJWT CVE - requires upgrade to pyjwt>=2.13.0
+CVE-2026-48526
