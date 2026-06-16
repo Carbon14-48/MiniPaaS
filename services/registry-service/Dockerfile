@@ -1,5 +1,6 @@
 # checkov:skip=CKV_DOCKER_3:requires root for Docker socket access
 FROM python:3.11-slim
+RUN rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends curl docker.io && rm -rf /var/lib/apt/lists/*

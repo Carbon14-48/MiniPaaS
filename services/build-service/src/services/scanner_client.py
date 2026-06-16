@@ -61,17 +61,4 @@ async def scan_image(image_tag: str, user_id: int, app_name: str) -> dict:
             detail={"message": f"Security scanner error: {e.response.text}", "status": "BLOCKED"}
         )
 
-    result = response.json()
-
-    if result.get("status") == "BLOCKED":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": f"Security policy violation: {result.get('block_reason')}",
-                "status": "BLOCKED",
-                "severity_breakdown": result.get("severity_breakdown"),
-                "details": result.get("details"),
-            }
-        )
-
-    return result
+    return response.json()
