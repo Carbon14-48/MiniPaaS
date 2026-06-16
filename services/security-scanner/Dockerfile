@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.12.13-slim AS builder
 RUN rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -24,7 +24,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --only-binary :all: --timeout 120 --retries 5 yara-python==4.5.1
 
 
-FROM python:3.12-slim
+FROM python:3.12.13-slim
 RUN rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

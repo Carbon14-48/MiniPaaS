@@ -3,7 +3,7 @@
 # (différent des Dockerfiles qu'il génère pour les apps utilisateurs)
 
 # checkov:skip=CKV_DOCKER_3:requires root for Docker socket access
-FROM python:3.11-slim
+FROM python:3.11.15-slim
 RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

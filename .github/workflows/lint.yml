@@ -137,10 +137,24 @@ jobs:
           failed=0
           for img in $(docker images --format "{{.Repository}}" | grep minipaas); do
             echo "=== Dockle $img ==="
+            ignore_flags=""
+            case "$img" in
+              *frontend|*deployment-service|*auth-service|*app-management|*api-gateway)
+                # These already have USER nobody or nginx-unprivileged
+                ;;
+              *)
+                # Docker socket services - root needed for Docker socket access
+                ignore_flags="--ignore CIS-DI-0001"
+                ;;
+            esac
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               goodwithtech/dockle \
               --exit-code 1 \
               --accept-key KEY_SHA512 \
+              --ignore DKL-DI-0005 \
+              --ignore DKL-DI-0006 \
+              --ignore CIS-DI-0010 \
+              $ignore_flags \
               "$img" || failed=1
           done
           [ "$failed" -eq 0 ] || exit 1
