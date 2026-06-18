@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     BLOCK_ON_MALWARE: bool = True
     BLOCK_ON_SECRETS: bool = True
     BLOCK_ON_ROOT_USER: bool = True
+    
+
 
     class Config:
         env_file = ".env"

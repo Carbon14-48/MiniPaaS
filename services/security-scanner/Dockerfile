@@ -75,7 +75,12 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD python -c "import socket;s=socket.socket();s.connect(('localhost',8000));s.close()" || exit 1
 
+# Install TruffleHog v3 for secret scanning
+RUN curl -fsSL https://github.com/trufflesecurity/trufflehog/releases/download/v3.95.5/trufflehog_3.95.5_linux_amd64.tar.gz -o /tmp/trufflehog.tar.gz && \
+    tar xzf /tmp/trufflehog.tar.gz -C /usr/local/bin/ trufflehog && \
+    rm /tmp/trufflehog.tar.gz
+
 # checkov:skip=CKV_DOCKER_3:needs root for docker socket + clamd setup, drops to clamav at runtime
-RUN printf '#!/bin/bash\nset -e\nif [ -e /var/run/docker.sock ]; then chmod 666 /var/run/docker.sock; fi\nmkdir -p /var/lib/clamav/.cache && chown clamav:clamav /var/lib/clamav/.cache\nif [ -d /root/.cache/trivy ]; then cp -r /root/.cache/trivy /var/lib/clamav/.cache/ 2>/dev/null || true; chown -R clamav:clamav /var/lib/clamav/.cache/trivy 2>/dev/null || true; fi\nnohup /usr/sbin/clamd --config-file=/etc/clamav/clamd.conf > /var/log/clamav/clamd.log 2>&1 &\nsleep 5\nexec su -s /bin/bash clamav -c "TRIVY_CACHE_DIR=/var/lib/clamav/.cache/trivy uvicorn src.main:app --host 0.0.0.0 --port 8000"\n' > /start.sh && chmod +x /start.sh
+RUN printf '#!/bin/bash\nset -e\nif [ -e /var/run/docker.sock ]; then chmod 666 /var/run/docker.sock; fi\nmkdir -p /var/lib/clamav/.cache && chown clamav:clamav /var/lib/clamav/.cache\nif [ -d /root/.cache/trivy ]; then cp -r /root/.cache/trivy /var/lib/clamav/.cache/ 2>/dev/null || true; chown -R clamav:clamav /var/lib/clamav/.cache/trivy 2>/dev/null || true; fi\n# Download Trivy DB in background if missing — doesn'\''t block startup\nif [ ! -f /var/lib/clamav/.cache/trivy/db/trivy.db ]; then\n  (su -s /bin/bash clamav -c "TRIVY_CACHE_DIR=/var/lib/clamav/.cache/trivy trivy image --download-db-only --quiet" 2>/dev/null || true) &\nfi\nnohup /usr/sbin/clamd --config-file=/etc/clamav/clamd.conf > /var/log/clamav/clamd.log 2>&1 &\nsleep 2\nexec su -s /bin/bash clamav -c "TRIVY_CACHE_DIR=/var/lib/clamav/.cache/trivy uvicorn src.main:app --host 0.0.0.0 --port 8000"\n' > /start.sh && chmod +x /start.sh
 
 CMD ["/start.sh"]

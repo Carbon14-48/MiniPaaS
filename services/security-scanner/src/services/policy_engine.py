@@ -59,8 +59,9 @@ def check_security_tools_available() -> dict:
 
 class PolicyEngine:
     """
-    Production Policy: Block on things the developer controls.
-    Warn on inherited CVEs from base images.
+    Policy engine that uses BLOCK_ON_* settings from config.
+    Block: malware, secrets, critical CVEs, root user (configurable).
+    Warn: high/medium/low CVEs, base image issues.
     """
 
     def evaluate(
@@ -68,23 +69,10 @@ class PolicyEngine:
         details: ScanDetails,
         breakdown: SeverityBreakdown,
     ) -> tuple[ScanStatus, Verdict, Optional[str], list[Warning]]:
-        """
-        Evaluate scan results.
-        
-        Blocking rules (things devs control):
-        1. Security tools not available -> BLOCK
-        2. Malware detected -> BLOCK
-        3. Secrets detected -> BLOCK
-        
-        Warning rules (inherited/base image issues):
-        1. CVEs (all severities) -> WARN only
-        2. Non-standard base image -> WARN only
-        3. Root user -> WARN only
-        """
         block_reasons: list[str] = []
         warnings: list[Warning] = []
 
-        # Rule 0: Check if security tools are available -> WARN only (don't block)
+        # Check if security tools are available
         tools = check_security_tools_available()
         missing_tools = [k for k, v in tools.items() if not v]
         if missing_tools:
@@ -94,28 +82,65 @@ class PolicyEngine:
                 message=f"Security tools unavailable: {', '.join(missing_tools)}. Scan may be incomplete."
             ))
 
-        # Rule 1: Malware detected -> BLOCK (developer's code)
-        if details.malware:
+        # Malware detected -> BLOCK
+        if settings.BLOCK_ON_MALWARE and details.malware:
             malware_count = len(details.malware)
-            block_reasons.append(
-                f"{malware_count} malware detection(s) found"
-            )
+            block_reasons.append(f"{malware_count} malware detection(s) found")
 
-        # Rule 2: Secrets detected -> BLOCK (developer's code)
-        if details.secrets:
+        # Secrets detected -> BLOCK
+        if settings.BLOCK_ON_SECRETS and details.secrets:
             secret_count = len(details.secrets)
-            block_reasons.append(
-                f"{secret_count} secret(s)/credential(s) detected"
-            )
+            block_reasons.append(f"{secret_count} secret(s)/credential(s) detected")
 
-        # Rule 2b: Excessive CVEs -> BLOCK (threshold-based)
-        # Block if too many critical/high vulnerabilities (likely vulnerable base image)
-        if breakdown.critical > 50 or breakdown.high > 500:
-            block_reasons.append(
-                f"Excessive vulnerabilities: {breakdown.critical} CRITICAL, {breakdown.high} HIGH - deployment blocked for security"
-            )
+        # Critical/High CVEs -> BLOCK if above thresholds
+        if settings.BLOCK_ON_HIGH_CVES:
+            crit = breakdown.critical
+            high = breakdown.high
+            if crit > 50 or high > 500:
+                parts = []
+                if crit > 50:
+                    parts.append(f"{crit} critical")
+                if high > 500:
+                    parts.append(f"{high} high")
+                block_reasons.append(
+                    f"Excessive vulnerabilities: {', '.join(parts)} CVE(s) found"
+                )
 
-        # Rule 3: Base image - WARN only (inherited)
+        # Root user -> BLOCK (configurable)
+        if settings.BLOCK_ON_ROOT_USER:
+            root_misconfig = any(
+                m.code in ("DKR0001", "DKR0002") or
+                "root" in m.title.lower()
+                for m in details.misconfigurations
+            )
+            if root_misconfig:
+                block_reasons.append("Container runs as root user")
+
+        # High CVEs -> WARN
+        if breakdown.high > 0:
+            warnings.append(Warning(
+                type="high_vulnerabilities",
+                count=breakdown.high,
+                message=f"{breakdown.high} HIGH severity CVE(s) found"
+            ))
+
+        # Medium CVEs -> WARN
+        if breakdown.medium > 0:
+            warnings.append(Warning(
+                type="medium_vulnerabilities",
+                count=breakdown.medium,
+                message=f"{breakdown.medium} MEDIUM severity CVE(s) found"
+            ))
+
+        # Low CVEs -> WARN
+        if breakdown.low > 0:
+            warnings.append(Warning(
+                type="low_vulnerabilities",
+                count=breakdown.low,
+                message=f"{breakdown.low} LOW severity CVE(s) found"
+            ))
+
+        # Non-standard base image -> WARN
         if details.base_image and not details.base_image.approved:
             warnings.append(Warning(
                 type="base_image",
@@ -123,49 +148,6 @@ class PolicyEngine:
                 message=f"Non-standard base image: {details.base_image.image}"
             ))
 
-        # Rule 4: Root user - WARN only (best practice)
-        root_misconfig = any(
-            m.code in ("DKR0001", "DKR0002") or
-            "root" in m.title.lower()
-            for m in details.misconfigurations
-        )
-        if root_misconfig:
-            warnings.append(Warning(
-                type="root_user",
-                count=1,
-                message="Container runs as root user - consider using non-root user"
-            ))
-
-        # Rule 5: CVEs -> WARN only (inherited from base image, not developer code)
-        if breakdown.critical > 0:
-            warnings.append(Warning(
-                type="critical_vulnerabilities",
-                count=breakdown.critical,
-                message=f"{breakdown.critical} CRITICAL CVE(s) found in base image - review recommended"
-            ))
-
-        if breakdown.high > 0:
-            warnings.append(Warning(
-                type="high_vulnerabilities",
-                count=breakdown.high,
-                message=f"{breakdown.high} HIGH severity CVE(s) found in base image - review recommended"
-            ))
-
-        if breakdown.medium > 0:
-            warnings.append(Warning(
-                type="medium_vulnerabilities",
-                count=breakdown.medium,
-                message=f"{breakdown.medium} MEDIUM severity CVE(s) found in base image"
-            ))
-
-        if breakdown.low > 0:
-            warnings.append(Warning(
-                type="low_vulnerabilities",
-                count=breakdown.low,
-                message=f"{breakdown.low} LOW severity CVE(s) found in base image"
-            ))
-
-        # Determine status
         if block_reasons:
             block_reason = "; ".join(block_reasons)
             logger.warning(f"Image BLOCKED: {block_reason}")
@@ -176,7 +158,6 @@ class PolicyEngine:
                 warnings,
             )
 
-        # PASS with warnings
         if warnings:
             logger.info(f"Image PASSED (with warnings): {[w.message for w in warnings]}")
             return (
@@ -186,7 +167,6 @@ class PolicyEngine:
                 warnings,
             )
 
-        # PASS clean
         logger.info("Image PASSED all security checks")
         return (
             ScanStatus.PASS,

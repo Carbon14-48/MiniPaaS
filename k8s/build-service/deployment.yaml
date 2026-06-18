@@ -18,7 +18,7 @@ spec:
       containers:
       - name: build-service
         image: ghcr.io/carbon14-48/minipaas-build-service:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8002
         envFrom:

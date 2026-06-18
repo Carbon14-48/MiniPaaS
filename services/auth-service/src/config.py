@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     ALLOWED_ORIGINS: list[str] = ["*"]
 
-    DATABASE_URL: str = "postgresql://minipaas:minipaas@localhost:5432/minipaas"  # NOSONAR
+    DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"  # NOSONAR
 
     JWT_SECRET_KEY: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"

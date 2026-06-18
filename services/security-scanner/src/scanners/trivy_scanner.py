@@ -36,8 +36,7 @@ class TrivyScanner:
                 "--scanners", "vuln",
                 "--format", "json",
                 "--output", output_path,
-                "--timeout", "180s",
-                "--skip-db-update",
+                "--timeout", f"{settings.SCANNER_MAX_TIMEOUT}s",
                 image_tag,
             ]
 

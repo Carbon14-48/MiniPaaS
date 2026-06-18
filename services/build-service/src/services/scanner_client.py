@@ -40,7 +40,7 @@ async def scan_image(image_tag: str, user_id: int, app_name: str) -> dict:
         HTTPException 400: image blocked by policy
     """
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=settings.max_build_timeout) as client:
             response = await client.post(
                 f"{settings.scanner_service_url}/scans/image",
                 json={

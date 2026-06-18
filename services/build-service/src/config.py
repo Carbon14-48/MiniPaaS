@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     build_workdir: str = "/tmp/builds"  # NOSONAR
 
-    max_build_timeout: int = 300
+    max_build_timeout: int = 600
 
     env: str = "development"
 
