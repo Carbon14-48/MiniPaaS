@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   gitleaks:
     name: Secret scan
@@ -175,5 +179,17 @@ jobs:
             docker push "ghcr.io/carbon14-48/$img:latest"
             docker push "ghcr.io/carbon14-48/$img:${{ github.sha }}"
           done
+
+  deploy:
+    name: Deploy to k3s
+    needs: build-scan-push
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to local k3s
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./deploy-from-ghcr.sh
 
 
