@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-nginx-config
+  namespace: minipaas
+data:
+  nginx.conf: |
+    server {
+        listen 8080;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        location /auth/ {
+            proxy_pass http://api-gateway:8000/auth/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /deployments/ {
+            proxy_pass http://api-gateway:8000/deployments/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /repos/ {
+            proxy_pass http://api-gateway:8000/repos/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /builds/ {
+            proxy_pass http://api-gateway:8000/builds/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /monitoring/ {
+            proxy_pass http://api-gateway:8000/monitoring/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /scanner/ {
+            proxy_pass http://api-gateway:8000/scanner/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location /registry/ {
+            proxy_pass http://api-gateway:8000/registry/;
+            proxy_set_header Host $host;
+            proxy_set_header Authorization $http_authorization;
+        }
+
+        location = /health {
+            proxy_pass http://api-gateway:8000/health;
+            proxy_set_header Host $host;
+        }
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }

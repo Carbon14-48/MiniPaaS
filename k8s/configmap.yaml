@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minipaas-config
+  namespace: minipaas
+data:
+  AUTH_SERVICE_URL: "http://auth-service:8000"
+  APP_MANAGEMENT_SERVICE_URL: "http://app-management:8000"
+  BUILD_SERVICE_URL: "http://build-service:8002"
+  DEPLOYMENT_SERVICE_URL: "http://deployment-service:8000"
+  MONITORING_SERVICE_URL: "http://monitoring-service:8006"
+  SECURITY_SCANNER_URL: "http://security-scanner:8000"
+  DEPLOYER_SERVICE_URL: "http://deployer-service:8000"
+  REGISTRY_SERVICE_URL: "http://registry-service:8005"
+
+  LOG_LEVEL: "INFO"
+  ENV: "development"
+  ALLOWED_ORIGINS: '["*"]'
+
+  DOCKER_REGISTRY_URL: "localhost:5000"
+  REGISTRY_HOST: "localhost:5000"
+  REGISTRY_URL: "http://registry:5000"
+
+  HOST_PORT_RANGE_START: "30000"
+  HOST_PORT_RANGE_END: "40000"
+
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRATION_MINUTES: "60"
+  REFRESH_TOKEN_ALGORITHM: "HS256"
+  REFRESH_TOKEN_EXPIRATION_DAYS: "7"
+  JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: "15"
+  DEBUG: "true"
+
+  BUILD_WORKDIR: "/tmp/builds"
+  MAX_BUILD_TIMEOUT: "300"
+
+  DOCKER_SOCKET_PATH: "/var/run/docker.sock"
+  TRIVY_PATH: "/usr/bin/trivy"
+  YARA_RULES_DIR: "/rules"
+  CLAMAV_DB_PATH: "/var/lib/clamav"
+  SCANNER_MAX_TIMEOUT: "300"
+  BLOCK_ON_HIGH_CVES: "True"
+  BLOCK_ON_MALWARE: "True"
+  BLOCK_ON_SECRETS: "True"
+  BLOCK_ON_ROOT_USER: "True"
+
+  COLLECT_INTERVAL_SECONDS: "30"
+  METRICS_RETENTION_DAYS: "7"
+  LOG_TAIL_LINES: "100"
+
+  KUBECONFIG_PATH: "/root/.kube/config"
+  CLOUDOKU_DOMAIN: "cloudoku.app"
+
+  GITHUB_API_URL: "https://api.github.com"

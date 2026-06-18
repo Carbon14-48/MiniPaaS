@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry-service
+  namespace: minipaas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry-service
+  template:
+    metadata:
+      labels:
+        app: registry-service
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: registry-service
+        image: ghcr.io/Carbon14-48/minipaas-registry-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8005
+        envFrom:
+        - configMapRef:
+            name: minipaas-config
+        - secretRef:
+            name: minipaas-secret
+        volumeMounts:
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
+        livenessProbe:
+          tcpSocket:
+            port: 8005
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          tcpSocket:
+            port: 8005
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket

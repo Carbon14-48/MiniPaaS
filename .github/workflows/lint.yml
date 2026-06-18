@@ -108,8 +108,8 @@ jobs:
           framework: dockerfile
           quiet: true
 
-  build-and-scan:
-    name: Build & scan images
+  build-scan-push:
+    name: Build, scan & push images
     needs: lint-docker
     runs-on: ubuntu-latest
     steps:
@@ -140,10 +140,8 @@ jobs:
             ignore_flags=""
             case "$img" in
               *frontend|*deployment-service|*auth-service|*app-management|*api-gateway)
-                # These already have USER nobody or nginx-unprivileged
                 ;;
               *)
-                # Docker socket services - root needed for Docker socket access
                 ignore_flags="--ignore CIS-DI-0001"
                 ;;
             esac
@@ -158,5 +156,24 @@ jobs:
               "$img" || failed=1
           done
           [ "$failed" -eq 0 ] || exit 1
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push images to GHCR
+        if: github.event_name == 'push'
+        run: |
+          for img in $(docker images --format "{{.Repository}}" | grep minipaas); do
+            echo "Pushing $img..."
+            docker tag "$img:latest" "ghcr.io/Carbon14-48/$img:latest"
+            docker tag "$img:latest" "ghcr.io/Carbon14-48/$img:${{ github.sha }}"
+            docker push "ghcr.io/Carbon14-48/$img:latest"
+            docker push "ghcr.io/Carbon14-48/$img:${{ github.sha }}"
+          done
 
 
