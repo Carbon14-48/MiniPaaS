@@ -23,7 +23,7 @@ fi
 echo "Applying manifests..."
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
+./setup-secret.sh
 kubectl apply -f k8s/ingress.yaml
 kubectl apply -f k8s/postgres/
 kubectl apply -f k8s/registry/
