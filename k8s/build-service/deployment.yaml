@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: build-service
-        image: ghcr.io/Carbon14-48/minipaas-build-service:latest
+        image: ghcr.io/carbon14-48/minipaas-build-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8002

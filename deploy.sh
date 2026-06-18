@@ -11,7 +11,7 @@ if ! kubectl get secret ghcr-secret -n minipaas >/dev/null 2>&1; then
   echo "GHCR secret not found. Create it:"
   echo "  kubectl create secret docker-registry ghcr-secret \\"
   echo "    --docker-server=ghcr.io \\"
-  echo "    --docker-username=Carbon14-48 \\"
+  echo "    --docker-username=carbon14-48 \\"
   echo "    --docker-password=YOUR_GITHUB_TOKEN \\"
   echo "    -n minipaas"
   echo ""

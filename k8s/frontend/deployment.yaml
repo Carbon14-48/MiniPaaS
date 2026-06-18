@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: frontend
-        image: ghcr.io/Carbon14-48/minipaas-frontend:latest
+        image: ghcr.io/carbon14-48/minipaas-frontend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

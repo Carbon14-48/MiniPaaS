@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: registry-service
-        image: ghcr.io/Carbon14-48/minipaas-registry-service:latest
+        image: ghcr.io/carbon14-48/minipaas-registry-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8005

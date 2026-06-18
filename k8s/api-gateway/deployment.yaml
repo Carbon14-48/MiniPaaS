@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: api-gateway
-        image: ghcr.io/Carbon14-48/minipaas-api-gateway:latest
+        image: ghcr.io/carbon14-48/minipaas-api-gateway:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: monitoring-service
-        image: ghcr.io/Carbon14-48/minipaas-monitoring-service:latest
+        image: ghcr.io/carbon14-48/minipaas-monitoring-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8006

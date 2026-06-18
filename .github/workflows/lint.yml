@@ -170,10 +170,10 @@ jobs:
         run: |
           for img in $(docker images --format "{{.Repository}}" | grep minipaas); do
             echo "Pushing $img..."
-            docker tag "$img:latest" "ghcr.io/Carbon14-48/$img:latest"
-            docker tag "$img:latest" "ghcr.io/Carbon14-48/$img:${{ github.sha }}"
-            docker push "ghcr.io/Carbon14-48/$img:latest"
-            docker push "ghcr.io/Carbon14-48/$img:${{ github.sha }}"
+            docker tag "$img:latest" "ghcr.io/carbon14-48/$img:latest"
+            docker tag "$img:latest" "ghcr.io/carbon14-48/$img:${{ github.sha }}"
+            docker push "ghcr.io/carbon14-48/$img:latest"
+            docker push "ghcr.io/carbon14-48/$img:${{ github.sha }}"
           done
 
 
