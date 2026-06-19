@@ -68,7 +68,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install Python deps & run tests
+      - name: Install Python deps
         run: |
           python -m venv /tmp/venv
           . /tmp/venv/bin/activate
@@ -76,7 +76,19 @@ jobs:
             pip install --quiet -r "$req" 2>/dev/null || true
           done
           pip install --quiet pytest
-          pytest services/ -o "addopts=" --ignore=services/security-scanner/tests
+      - name: Run Python tests per service
+        run: |
+          . /tmp/venv/bin/activate
+          failed=0
+          for svc in services/*/; do
+            svc_name=$(basename "$svc")
+            [ "$svc_name" = "security-scanner" ] && continue
+            [ -d "$svc/tests" ] || continue
+            echo "=== $svc_name ==="
+            pytest "$svc/tests" -o "addopts=" || failed=1
+            echo ""
+          done
+          exit $failed
 
   sonarcloud:
     name: SonarCloud
