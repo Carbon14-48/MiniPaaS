@@ -87,12 +87,13 @@ jobs:
             [ -d "$svc/tests" ] || continue
             echo "::group::$svc_name"
             set +e
-            python3 -m pytest "$svc/tests" --tb=long -o "addopts=" -v 2>&1
+            pytest_out=$(python3 -m pytest "$svc/tests" --tb=long -o "addopts=" -v 2>&1)
             rc=$?
             set -e
-            echo "exit_code=$rc"
+            echo "$pytest_out"
             if [ $rc -ne 0 ]; then
-              echo "::error file=$svc/tests,line=1,title=$svc_name tests::FAILED (exit $rc)"
+              errmsg=$(echo "$pytest_out" | grep -m1 -E '^(E|ERROR|Error|ImportError|ModuleNotFoundError|FAILED|collected)' | head -3)
+              echo "::error title=$svc_name::exit=$rc ${errmsg:+| $errmsg}"
               failed=1
             fi
             echo "::endgroup::"
