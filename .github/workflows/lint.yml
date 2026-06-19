@@ -92,8 +92,8 @@ jobs:
             set -e
             echo "$pytest_out"
             if [ $rc -ne 0 ]; then
-              errmsg=$(echo "$pytest_out" | grep -m1 -E '^(E|ERROR|Error|ImportError|ModuleNotFoundError|FAILED|collected)' | head -3)
-              echo "::error title=$svc_name::exit=$rc ${errmsg:+| $errmsg}"
+              errmsg=$(echo "$pytest_out" | grep -A3 -m1 -E '^(E\s+.*Error|ERROR|FAILED)' | tr '\n' ' ')
+              echo "::error title=$svc_name::$svc_name exit=$rc $errmsg"
               failed=1
             fi
             echo "::endgroup::"
