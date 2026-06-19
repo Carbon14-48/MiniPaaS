@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     REGISTRY_SERVICE_URL: str = "http://registry-service:8005"
 
     class Config:
+        extra = "ignore"
         env_file = ".env"
 
 

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DEPLOYMENT_SERVICE_URL: str = "http://deployment-service:8004"
 
     class Config:
+        extra = "ignore"
         env_file = ".env"
 
 

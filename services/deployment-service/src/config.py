@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
 
     class Config:
+        extra = "ignore"
         env_file = ".env"
 
 

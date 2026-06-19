@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     env: str = "development"
 
     class Config:
+        extra = "ignore"
         env_file = ".env"
         env_file_encoding = "utf-8"
 
