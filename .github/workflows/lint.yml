@@ -78,7 +78,6 @@ jobs:
           done
           pip install --quiet pytest
       - name: Run Python tests per service
-        shell: bash
         run: |
           . /tmp/venv/bin/activate
           failed=0
@@ -87,11 +86,13 @@ jobs:
             [ "$svc_name" = "security-scanner" ] && continue
             [ -d "$svc/tests" ] || continue
             echo "::group::$svc_name"
-            output=$(pytest "$svc/tests" --tb=long -o "addopts=" -v 2>&1); rc=$?
-            echo "$output"
+            set +e
+            python3 -m pytest "$svc/tests" --tb=long -o "addopts=" -v 2>&1
+            rc=$?
+            set -e
+            echo "exit_code=$rc"
             if [ $rc -ne 0 ]; then
-              last_fail=$(echo "$output" | grep -E '(FAILED|ERROR|ModuleNotFoundError|ImportError)' | tail -5)
-              echo "::error::FAILED: $svc_name (exit $rc)${last_fail:+ — }$last_fail"
+              echo "::error file=$svc/tests,line=1,title=$svc_name tests::FAILED (exit $rc)"
               failed=1
             fi
             echo "::endgroup::"
