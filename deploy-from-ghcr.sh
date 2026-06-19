@@ -53,9 +53,4 @@ for svc in $SERVICES; do
   kubectl rollout status -n minipaas "deployment/$svc" --timeout=300s 2>&1 | tail -1 || echo "  $svc timed out, continuing"
 done
 
-echo "=== Setting up port-forward to localhost:8080 ==="
-kill $(lsof -t -i :8080 -sTCP:LISTEN 2>/dev/null) 2>/dev/null || true
-setsid kubectl port-forward -n minipaas svc/frontend 8080:8080 &>/dev/null &
-echo "  Port-forward running: localhost:8080 -> frontend:8080"
-
 echo "=== Deploy complete ==="
