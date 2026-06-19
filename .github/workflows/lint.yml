@@ -85,7 +85,7 @@ jobs:
             [ "$svc_name" = "security-scanner" ] && continue
             [ -d "$svc/tests" ] || continue
             echo "=== $svc_name ==="
-            pytest "$svc/tests" -o "addopts=" || failed=1
+            pytest "$svc/tests" --tb=long -o "addopts=" -v || failed=1
             echo ""
           done
           exit $failed
