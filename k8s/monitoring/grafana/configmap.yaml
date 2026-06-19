@@ -1,0 +1,206 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: default
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+          foldersFromFilesStructure: true
+
+  cluster-overview.json: |
+    {
+      "title": "K3s Cluster Overview",
+      "version": 1,
+      "timezone": "browser",
+      "editable": true,
+      "refresh": "30s",
+      "tags": ["k3s", "cluster"],
+      "panels": [
+        {
+          "title": "Node CPU Usage",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
+            "legendFormat": "CPU"
+          }]
+        },
+        {
+          "title": "Node Memory Usage",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+          "targets": [{
+            "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+            "legendFormat": "Memory"
+          }]
+        },
+        {
+          "title": "Node Disk Usage",
+          "type": "gauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+          "targets": [{
+            "expr": "100 * (1 - node_filesystem_free_bytes{mountpoint=\"/\",fstype!=\"\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"\"})",
+            "legendFormat": "Disk"
+          }]
+        },
+        {
+          "title": "Pod Count",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+          "targets": [{
+            "expr": "count(kube_pod_status_phase{phase=\"Running\"})",
+            "legendFormat": "Running"
+          }]
+        },
+        {
+          "title": "CPU Usage by Namespace",
+          "type": "bargauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[1m])) by (namespace)",
+            "legendFormat": "{{namespace}}"
+          }]
+        },
+        {
+          "title": "Memory Usage by Namespace",
+          "type": "bargauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "sum(container_memory_working_set_bytes{container!=\"\"}) by (namespace)",
+            "legendFormat": "{{namespace}}"
+          }]
+        },
+        {
+          "title": "Pod CPU Usage (top 10)",
+          "type": "table",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [{
+            "expr": "topk(10, sum(rate(container_cpu_usage_seconds_total{container!=\"\"}[1m])) by (pod, namespace))",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "title": "Pod Memory Usage (top 10)",
+          "type": "table",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "targets": [{
+            "expr": "topk(10, sum(container_memory_working_set_bytes{container!=\"\"}) by (pod, namespace))",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "title": "Deployment Availability",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+          "targets": [{
+            "expr": "sum(kube_deployment_spec_replicas) by (namespace, deployment)",
+            "legendFormat": "desired: {{deployment}}"
+          },{
+            "expr": "sum(kube_deployment_status_replicas_available) by (namespace, deployment)",
+            "legendFormat": "available: {{deployment}}"
+          }]
+        },
+        {
+          "title": "Container Restarts (last 1h)",
+          "type": "bargauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+          "targets": [{
+            "expr": "sum(kube_pod_container_status_restarts_total) by (pod, namespace)",
+            "legendFormat": "{{pod}}"
+          }]
+        }
+      ]
+    }
+
+  minipaas-detail.json: |
+    {
+      "title": "MiniPaaS Service Detail",
+      "version": 1,
+      "timezone": "browser",
+      "editable": true,
+      "refresh": "15s",
+      "tags": ["minipaas"],
+      "panels": [
+        {
+          "title": "MiniPaaS Pod Status",
+          "type": "stat",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+          "targets": [{
+            "expr": "count(kube_pod_status_phase{namespace=\"minipaas\",phase=\"Running\"})",
+            "legendFormat": "Running"
+          },{
+            "expr": "count(kube_pod_status_phase{namespace=\"minipaas\",phase=~\"Pending|Failed|Unknown\"})",
+            "legendFormat": "Not Running"
+          }]
+        },
+        {
+          "title": "MiniPaaS CPU Usage",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 9, "x": 6, "y": 0},
+          "targets": [{
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"minipaas\",container!=\"\"}[1m])) by (pod)",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "title": "MiniPaaS Memory Usage",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 9, "x": 15, "y": 0},
+          "targets": [{
+            "expr": "sum(container_memory_working_set_bytes{namespace=\"minipaas\",container!=\"\"}) by (pod)",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "title": "MiniPaaS Container Restarts",
+          "type": "bargauge",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{
+            "expr": "kube_pod_container_status_restarts_total{namespace=\"minipaas\"}",
+            "legendFormat": "{{pod}}.{{container}}"
+          }]
+        },
+        {
+          "title": "MiniPaaS Network I/O",
+          "type": "timeseries",
+          "datasource": "Prometheus",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{
+            "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"minipaas\"}[1m])) by (pod)",
+            "legendFormat": "rx: {{pod}}"
+          },{
+            "expr": "sum(rate(container_network_transmit_bytes_total{namespace=\"minipaas\"}[1m])) by (pod)",
+            "legendFormat": "tx: {{pod}}"
+          }]
+        }
+      ]
+    }

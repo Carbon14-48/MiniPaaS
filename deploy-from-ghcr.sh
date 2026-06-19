@@ -32,6 +32,13 @@ kubectl apply -f k8s/registry-service/
 kubectl apply -f k8s/security-scanner/
 kubectl apply -f k8s/api-gateway/
 kubectl apply -f k8s/frontend/
+kubectl apply -f k8s/monitoring/namespace.yaml
+kubectl apply -f k8s/monitoring/prometheus/rbac.yaml
+kubectl apply -f k8s/monitoring/prometheus/configmap.yaml
+kubectl apply -f k8s/monitoring/prometheus/
+kubectl apply -f k8s/monitoring/node-exporter/
+kubectl apply -f k8s/monitoring/kube-state-metrics/
+kubectl apply -f k8s/monitoring/grafana/
 kubectl apply -f k8s/ingress.yaml
 
 echo "=== Injecting GitHub credentials from secrets ==="
