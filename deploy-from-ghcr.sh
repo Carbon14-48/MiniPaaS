@@ -34,6 +34,9 @@ kubectl apply -f k8s/api-gateway/
 kubectl apply -f k8s/frontend/
 kubectl apply -f k8s/ingress.yaml
 
+echo "=== Injecting GitHub credentials from secrets ==="
+kubectl patch secret -n minipaas minipaas-secret -p "{\"stringData\":{\"GITHUB_CLIENT_ID\":\"$GITHUB_CLIENT_ID\",\"GITHUB_CLIENT_SECRET\":\"$GITHUB_CLIENT_SECRET\"}}"
+
 echo "=== Restarting all deployments ==="
 kubectl rollout restart -n minipaas deployment/api-gateway deployment/app-management deployment/auth-service deployment/build-service deployment/deployer-service deployment/deployment-service deployment/frontend deployment/monitoring-service deployment/registry-service deployment/security-scanner
 

@@ -190,6 +190,8 @@ jobs:
       - name: Deploy to local k3s
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_CLIENT_ID: ${{ secrets.GH_GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GH_GITHUB_CLIENT_SECRET }}
         run: ./deploy-from-ghcr.sh
 
 
