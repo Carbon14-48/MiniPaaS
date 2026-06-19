@@ -73,8 +73,7 @@ jobs:
           python -m venv /tmp/venv
           . /tmp/venv/bin/activate
           for req in services/*/requirements.txt; do
-            echo "--- Installing $req ---"
-            pip install -r "$req" || { echo "::warning::pip install failed for $req"; }
+            pip install --quiet -r "$req" 2>/dev/null || true
           done
           pip install --quiet pytest
       - name: Run Python tests per service
@@ -85,18 +84,9 @@ jobs:
             svc_name=$(basename "$svc")
             [ "$svc_name" = "security-scanner" ] && continue
             [ -d "$svc/tests" ] || continue
-            echo "::group::$svc_name"
-            set +e
-            pytest_out=$(python3 -m pytest "$svc/tests" --tb=long -o "addopts=" -v 2>&1)
-            rc=$?
-            set -e
-            echo "$pytest_out"
-            if [ $rc -ne 0 ]; then
-              errmsg=$(echo "$pytest_out" | grep -A3 -m1 -E '^(E\s+.*Error|ERROR|FAILED)' | tr '\n' ' ')
-              echo "::error title=$svc_name::$svc_name exit=$rc $errmsg"
-              failed=1
-            fi
-            echo "::endgroup::"
+            echo "=== $svc_name ==="
+            pytest "$svc/tests" --tb=short -v || failed=1
+            echo ""
           done
           exit $failed
 

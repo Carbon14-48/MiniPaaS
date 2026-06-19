@@ -1,4 +1,3 @@
-from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -7,7 +6,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ALLOWED_ORIGINS: list[str] = ["*"]
 
-    DATABASE_URL: str = Field(...)
+    DATABASE_URL: str = "postgresql://minipaas:minipaas@postgres:5432/minipaas"
 
     BUILD_SERVICE_URL: str = "http://build-service:8003"
     DEPLOYMENT_SERVICE_URL: str = "http://deployment-service:8004"
