@@ -54,6 +54,9 @@ Thumbs.db
 *.log
 logs/
 
+# Database
+*.db
+
 # Coverage
 coverage.xml
 frontend/coverage/

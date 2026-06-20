@@ -7,7 +7,7 @@ type AuthBackgroundProps = {
 
 export default function AuthBackground({ children }: AuthBackgroundProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gray-950">
+    <div className="relative min-h-screen overflow-hidden bg-bg-primary">
       <div className="pointer-events-none absolute inset-0">
         <Lightning
           hue={360}

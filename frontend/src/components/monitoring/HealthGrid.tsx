@@ -17,8 +17,8 @@ export default function HealthGrid({
 }: HealthGridProps) {
   const statusConfig = {
     running: {
-      color: 'accent-green',
-      bg: 'bg-accent-green/10',
+      color: 'accent-white',
+      bg: 'bg-accent-white/10',
       icon: CheckCircle,
       label: 'Healthy',
       pulse: true,
@@ -31,8 +31,8 @@ export default function HealthGrid({
       pulse: false,
     },
     paused: {
-      color: 'accent-orange',
-      bg: 'bg-accent-orange/10',
+      color: 'accent-gray',
+      bg: 'bg-bg-hover',
       icon: AlertTriangle,
       label: 'Paused',
       pulse: false,
@@ -82,6 +82,18 @@ export default function HealthGrid({
         const Icon = config.icon;
         const isSelected = selectedApp === container.app_id;
 
+        const dotColor =
+          config.color === 'accent-white' ? 'bg-accent-white' :
+          config.color === 'accent-red' ? 'bg-accent-red' :
+          config.color === 'accent-gray' ? 'bg-accent-gray' :
+          'bg-text-muted';
+
+        const textColor =
+          config.color === 'accent-white' ? 'text-accent-white' :
+          config.color === 'accent-red' ? 'text-accent-red' :
+          config.color === 'accent-gray' ? 'text-accent-gray' :
+          'text-text-muted';
+
         return (
           <motion.div
             key={container.container_id || container.app_id}
@@ -91,8 +103,8 @@ export default function HealthGrid({
             onClick={() => onSelectApp(container.app_id)}
             className={`card p-4 cursor-pointer transition-all duration-300 group ${
               isSelected
-                ? 'ring-2 ring-accent-blue shadow-glow-blue border-accent-blue/50'
-                : 'hover:border-accent-blue/30 hover:shadow-card-hover'
+                ? 'ring-2 ring-accent-white shadow-glow-white border-accent-white/50'
+                : 'hover:border-accent-white/30 hover:shadow-card-hover'
             }`}
           >
             <div className="flex items-start justify-between mb-3">
@@ -108,8 +120,8 @@ export default function HealthGrid({
                     repeat: config.pulse ? Infinity : 0,
                     ease: 'easeInOut',
                   }}
-                  className={`w-3 h-3 rounded-full bg-${config.color} ${
-                    config.pulse ? 'shadow-glow-' + config.color.split('-')[1] : ''
+                  className={`w-3 h-3 rounded-full ${dotColor} ${
+                    config.pulse ? 'shadow-glow-white' : ''
                   }`}
                 />
                 <h4 className="font-medium text-text-primary truncate">
@@ -117,7 +129,7 @@ export default function HealthGrid({
                 </h4>
               </div>
               <Icon
-                className={`w-4 h-4 text-${config.color} ${
+                className={`w-4 h-4 ${textColor} ${
                   config.pulse ? 'animate-pulse' : ''
                 }`}
               />
@@ -126,7 +138,7 @@ export default function HealthGrid({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-text-muted text-xs">Status</span>
-                <span className={`text-${config.color} text-xs font-medium`}>
+                <span className={`text-xs font-medium ${textColor}`}>
                   {config.label}
                 </span>
               </div>
@@ -143,7 +155,7 @@ export default function HealthGrid({
             </div>
 
             <div
-              className={`mt-3 pt-3 border-t border-border/50 flex items-center justify-center gap-2 text-${config.color} text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity`}
+              className={`mt-3 pt-3 border-t border-border/50 flex items-center justify-center gap-2 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity ${textColor}`}
             >
               <Activity className="w-3 h-3" />
               <span>View Details</span>

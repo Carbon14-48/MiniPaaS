@@ -25,12 +25,12 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-text-primary">
             Create your MiniPaaS account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
+          <p className="mt-2 text-center text-sm text-text-secondary">
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-blue-500 hover:text-blue-400">
+            <Link to="/login" className="font-medium text-text-secondary hover:text-text-primary">
               Sign in
             </Link>
           </p>
@@ -38,7 +38,7 @@ export default function Register() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-500/20 border border-red-500 rounded p-3 text-red-400 text-sm">
+            <div className="bg-accent-red/10 border border-accent-red/30 rounded p-3 text-accent-red text-sm">
               {error}
             </div>
           )}
@@ -51,7 +51,7 @@ export default function Register() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full name"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-border placeholder-text-muted text-text-primary bg-bg-input rounded-t-md focus:outline-none focus:ring-2 focus:ring-accent-white/30 focus:border-accent-white focus:z-10 sm:text-sm"
               />
             </div>
             <div>
@@ -61,7 +61,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-border placeholder-text-muted text-text-primary bg-bg-input focus:outline-none focus:ring-2 focus:ring-accent-white/30 focus:border-accent-white focus:z-10 sm:text-sm"
               />
             </div>
             <div>
@@ -71,19 +71,19 @@ export default function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-700 placeholder-gray-500 text-white bg-gray-800 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-border placeholder-text-muted text-text-primary bg-bg-input rounded-b-md focus:outline-none focus:ring-2 focus:ring-accent-white/30 focus:border-accent-white focus:z-10 sm:text-sm"
               />
             </div>
           </div>
 
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-text-muted">
             Password must be at least 8 characters with uppercase, lowercase, and digit.
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-accent-white hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-white disabled:opacity-50"
           >
             {isLoading ? 'Creating account...' : 'Create account'}
           </button>

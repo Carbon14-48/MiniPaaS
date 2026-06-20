@@ -115,21 +115,21 @@ export default function Deployments() {
   const buildingCount = deployments.filter((d) => d.status === 'building' || d.status === 'deploying').length;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <div className="min-h-screen bg-bg-primary text-text-primary">
+      <nav className="bg-bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-xl font-bold text-white">MiniPaaS</Link>
+            <Link to="/dashboard" className="text-xl font-bold text-text-primary">MiniPaaS</Link>
             <div className="flex gap-4">
-              <Link to="/dashboard" className="text-gray-300 hover:text-white transition">Dashboard</Link>
-              <Link to="/deployments" className="text-white font-medium">Deployments</Link>
-<Link to="/monitoring" className="text-gray-300 hover:text-white transition">Monitoring</Link>
-              <Link to="/repos" className="text-gray-300 hover:text-white transition">Repositories</Link>
+              <Link to="/dashboard" className="text-text-secondary hover:text-text-primary transition">Dashboard</Link>
+              <Link to="/deployments" className="text-text-primary font-medium">Deployments</Link>
+<Link to="/monitoring" className="text-text-secondary hover:text-text-primary transition">Monitoring</Link>
+              <Link to="/repos" className="text-text-secondary hover:text-text-primary transition">Repositories</Link>
              </div>
            </div>
           <button
             onClick={() => loadDeployments()}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition flex items-center gap-2"
+            className="px-3 py-1.5 bg-bg-hover hover:bg-border text-text-primary text-sm rounded transition flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -143,39 +143,39 @@ export default function Deployments() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold">Your Deployments</h1>
-            <p className="text-gray-400 mt-1 text-sm">
-              Auto-refreshes every 5 seconds • Last: {lastRefresh.toLocaleTimeString()}
+            <p className="text-text-secondary mt-1 text-sm">
+              Auto-refreshes every 5 seconds - Last: {lastRefresh.toLocaleTimeString()}
             </p>
           </div>
           <Link
             to="/repos"
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+            className="px-4 py-2 bg-accent-white text-black hover:bg-accent-light rounded-lg transition"
           >
             New Deployment
           </Link>
         </div>
 
         <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="text-2xl font-bold text-green-400">{runningCount}</div>
-            <div className="text-gray-400">Running</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-2xl font-bold text-text-primary">{runningCount}</div>
+            <div className="text-text-secondary">Running</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="text-2xl font-bold text-yellow-400">{buildingCount}</div>
-            <div className="text-gray-400">Building</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-2xl font-bold text-text-primary">{buildingCount}</div>
+            <div className="text-text-secondary">Building</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="text-2xl font-bold text-red-400">{failedCount}</div>
-            <div className="text-gray-400">Failed/Blocked</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-2xl font-bold text-text-primary">{failedCount}</div>
+            <div className="text-text-secondary">Failed/Blocked</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="text-2xl font-bold text-gray-400">{stoppedCount}</div>
-            <div className="text-gray-400">Stopped</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-2xl font-bold text-text-primary">{stoppedCount}</div>
+            <div className="text-text-secondary">Stopped</div>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
+          <div className="mb-6 p-4 bg-accent-red/10 border border-accent-red/30 rounded-lg text-accent-red">
             {error}
             <button
               onClick={() => window.location.href = '/'}
@@ -188,14 +188,14 @@ export default function Deployments() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-white"></div>
           </div>
         ) : deployments.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-            <p className="text-gray-400 mb-4">No deployments yet</p>
+          <div className="text-center py-12 bg-bg-card rounded-lg border border-border">
+            <p className="text-text-secondary mb-4">No deployments yet</p>
             <Link
               to="/repos"
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition inline-block"
+              className="px-4 py-2 bg-accent-white text-black hover:bg-accent-light rounded-lg transition inline-block"
             >
               Deploy your first app
             </Link>

@@ -8,27 +8,26 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary: '#0f1419',
-          card: '#1a2332',
-          hover: '#243044',
-          input: '#0d1117',
+          primary: '#000000',
+          card: '#0a0a0a',
+          hover: '#1a1a1a',
+          input: '#050505',
         },
         border: {
-          DEFAULT: '#2a3a4d',
-          hover: '#3b82f6',
+          DEFAULT: '#1a1a1a',
+          hover: '#333333',
         },
         accent: {
-          blue: '#3b82f6',
-          green: '#22c55e',
-          orange: '#f59e0b',
-          red: '#ef4444',
-          purple: '#8b5cf6',
-          cyan: '#06b6d4',
+          white: '#ffffff',
+          gray: '#888888',
+          light: '#cccccc',
+          dark: '#444444',
+          red: '#ff4444',
         },
         text: {
-          primary: '#f1f5f9',
-          secondary: '#94a3b8',
-          muted: '#64748b',
+          primary: '#ffffff',
+          secondary: '#888888',
+          muted: '#555555',
         },
       },
       animation: {
@@ -42,8 +41,8 @@ export default {
       },
       keyframes: {
         glow: {
-          '0%': { boxShadow: '0 0 5px var(--glow-color, #3b82f6)' },
-          '100%': { boxShadow: '0 0 20px var(--glow-color, #3b82f6)' },
+          '0%': { boxShadow: '0 0 5px rgba(255, 255, 255, 0.3)' },
+          '100%': { boxShadow: '0 0 20px rgba(255, 255, 255, 0.6)' },
         },
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
@@ -67,12 +66,10 @@ export default {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       boxShadow: {
-        'glow-blue': '0 0 15px rgba(59, 130, 246, 0.5)',
-        'glow-green': '0 0 15px rgba(34, 197, 94, 0.5)',
-        'glow-red': '0 0 15px rgba(239, 68, 68, 0.5)',
-        'glow-orange': '0 0 15px rgba(245, 158, 11, 0.5)',
-        'card': '0 4px 20px rgba(0, 0, 0, 0.3)',
-        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.5)',
+        'glow-white': '0 0 15px rgba(255, 255, 255, 0.3)',
+        'glow-red': '0 0 15px rgba(255, 68, 68, 0.5)',
+        'card': '0 4px 20px rgba(0, 0, 0, 0.5)',
+        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.7)',
       },
       backdropBlur: {
         xs: '2px',

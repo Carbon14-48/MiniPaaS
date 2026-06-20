@@ -11,10 +11,10 @@ interface LogConsoleProps {
 }
 
 const levelConfig = {
-  INFO: { color: 'accent-green', bg: 'bg-accent-green/10', label: 'INFO' },
-  WARN: { color: 'accent-orange', bg: 'bg-accent-orange/10', label: 'WARN' },
-  ERROR: { color: 'accent-red', bg: 'bg-accent-red/10', label: 'ERROR' },
-  DEBUG: { color: 'text-muted', bg: 'bg-border', label: 'DEBUG' },
+  INFO: { color: 'text-text-primary', bg: 'bg-bg-hover', label: 'INFO' },
+  WARN: { color: 'text-text-secondary', bg: 'bg-bg-hover', label: 'WARN' },
+  ERROR: { color: 'text-accent-red', bg: 'bg-accent-red/10', label: 'ERROR' },
+  DEBUG: { color: 'text-text-muted', bg: 'bg-border', label: 'DEBUG' },
 };
 
 export default function LogConsole({ logs, loading, appId, onFetchLive }: LogConsoleProps) {
@@ -78,7 +78,7 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
             <motion.span
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="px-2 py-0.5 text-xs font-medium rounded-full bg-accent-green/20 text-accent-green"
+              className="px-2 py-0.5 text-xs font-medium rounded-full bg-accent-white/10 text-text-primary"
             >
               LIVE
             </motion.span>
@@ -89,7 +89,7 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
             onClick={() => setFilter(filter === 'all' ? 'ERROR' : filter === 'ERROR' ? 'WARN' : 'all')}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               filter !== 'all'
-                ? 'bg-accent-orange/20 text-accent-orange'
+                ? 'bg-bg-hover text-text-primary'
                 : 'bg-bg-hover text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -100,7 +100,7 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
             onClick={() => setIsLive(!isLive)}
             className={`p-2 rounded-lg transition-colors ${
               isLive
-                ? 'bg-accent-green/20 text-accent-green'
+                ? 'bg-accent-white/10 text-text-primary'
                 : 'bg-bg-hover text-text-secondary hover:text-text-primary'
             }`}
             title={isLive ? 'Pause live' : 'Start live'}
@@ -122,7 +122,7 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
             onClick={() => setAutoScroll(!autoScroll)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               autoScroll
-                ? 'bg-accent-blue/20 text-accent-blue'
+                ? 'bg-bg-hover text-text-primary'
                 : 'bg-bg-hover text-text-secondary'
             }`}
           >
@@ -174,7 +174,7 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
                     log.level === 'ERROR'
                       ? 'bg-accent-red/5 hover:bg-accent-red/10'
                       : log.level === 'WARN'
-                      ? 'bg-accent-orange/5 hover:bg-accent-orange/10'
+                      ? 'bg-bg-hover hover:bg-border'
                       : 'hover:bg-bg-hover'
                   }`}
                 >
@@ -183,7 +183,10 @@ export default function LogConsole({ logs, loading, appId, onFetchLive }: LogCon
                   </span>
                   <span
                     className={`px-1.5 py-0.5 text-xs font-bold rounded ${
-                      config.bg + ' text-' + config.color
+                      log.level === 'ERROR' ? 'bg-accent-red/10 text-accent-red' :
+                      log.level === 'WARN' ? 'bg-bg-hover text-text-secondary' :
+                      log.level === 'DEBUG' ? 'bg-border text-text-muted' :
+                      'bg-bg-hover text-text-primary'
                     }`}
                   >
                     {config.label}

@@ -45,16 +45,16 @@ export default function Repositories() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <div className="min-h-screen bg-bg-primary text-text-primary">
+      <nav className="bg-bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-xl font-bold text-white">MiniPaaS</Link>
+            <Link to="/dashboard" className="text-xl font-bold text-text-primary">MiniPaaS</Link>
             <div className="flex gap-4">
-              <Link to="/dashboard" className="text-gray-300 hover:text-white transition">Dashboard</Link>
-              <Link to="/deployments" className="text-gray-300 hover:text-white transition">Deployments</Link>
-              <Link to="/monitoring" className="text-gray-300 hover:text-white transition">Monitoring</Link>
-              <Link to="/repos" className="text-white font-medium">Repositories</Link>
+              <Link to="/dashboard" className="text-text-secondary hover:text-text-primary transition">Dashboard</Link>
+              <Link to="/deployments" className="text-text-secondary hover:text-text-primary transition">Deployments</Link>
+              <Link to="/monitoring" className="text-text-secondary hover:text-text-primary transition">Monitoring</Link>
+              <Link to="/repos" className="text-text-primary font-medium">Repositories</Link>
             </div>
           </div>
         </div>
@@ -63,11 +63,11 @@ export default function Repositories() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold">Your GitHub Repositories</h1>
-          <p className="text-gray-400 mt-1">Select a repository to deploy</p>
+          <p className="text-text-secondary mt-1">Select a repository to deploy</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
+          <div className="mb-6 p-4 bg-accent-red/10 border border-accent-red/30 rounded-lg text-accent-red">
             {error}
             <button
               onClick={loadRepos}
@@ -80,12 +80,12 @@ export default function Repositories() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-white"></div>
           </div>
         ) : repos.length === 0 ? (
-          <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-            <p className="text-gray-400 mb-4">No repositories found</p>
-            <p className="text-gray-500 text-sm">Make sure you've connected your GitHub account</p>
+          <div className="text-center py-12 bg-bg-card rounded-lg border border-border">
+            <p className="text-text-secondary mb-4">No repositories found</p>
+            <p className="text-text-muted text-sm">Make sure you've connected your GitHub account</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

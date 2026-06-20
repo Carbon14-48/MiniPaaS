@@ -10,15 +10,6 @@ interface OverviewCardsProps {
   loading: boolean;
 }
 
-function thresholdColor(value: number, over80: string, over50: string, under: string): string {
-  return value > 80 ? over80 : value > 50 ? over50 : under;
-}
-
-function thresholdGradient(value: number, over80: string, over50: string, under: string): string {
-  const color = thresholdColor(value, over80, over50, under);
-  return `from-${color}/20`;
-}
-
 export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
   const runningApps = apps.filter((a) => a.status === 'running').length;
   const avgCpu =
@@ -36,29 +27,37 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
       label: 'Active Apps',
       value: runningApps,
       icon: Server,
-      color: 'accent-green',
-      gradient: 'from-accent-green/20 to-transparent',
+      iconClass: 'text-accent-white',
+      gradientClass: 'from-accent-white/10 to-transparent',
+      valueClass: 'text-text-primary',
+      barClass: 'from-accent-white',
     },
     {
       label: 'Avg CPU',
       value: `${avgCpu.toFixed(1)}%`,
       icon: Cpu,
-      color: thresholdColor(avgCpu, 'accent-red', 'accent-orange', 'accent-blue'),
-      gradient: thresholdGradient(avgCpu, 'accent-red', 'accent-orange', 'accent-blue'),
+      iconClass: 'text-text-primary',
+      gradientClass: 'from-accent-white/10 to-transparent',
+      valueClass: 'text-text-primary',
+      barClass: 'from-accent-white',
     },
     {
       label: 'Avg RAM',
       value: `${avgRam.toFixed(1)}%`,
       icon: HardDrive,
-      color: thresholdColor(avgRam, 'accent-red', 'accent-orange', 'accent-purple'),
-      gradient: thresholdGradient(avgRam, 'accent-red', 'accent-orange', 'accent-purple'),
+      iconClass: 'text-text-primary',
+      gradientClass: 'from-accent-white/10 to-transparent',
+      valueClass: 'text-text-primary',
+      barClass: 'from-accent-white',
     },
     {
       label: 'Alerts',
       value: alerts,
       icon: AlertCircle,
-      color: alerts > 0 ? 'accent-red' : 'text-muted',
-      gradient: alerts > 0 ? 'from-accent-red/20 to-transparent' : 'from-border/20 to-transparent',
+      iconClass: alerts > 0 ? 'text-accent-red' : 'text-text-muted',
+      gradientClass: alerts > 0 ? 'from-accent-red/20 to-transparent' : 'from-border/20 to-transparent',
+      valueClass: alerts > 0 ? 'text-accent-red' : 'text-text-muted',
+      barClass: alerts > 0 ? 'from-accent-red' : 'from-border',
     },
   ];
 
@@ -73,7 +72,7 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
           className={`card relative overflow-hidden p-5 group cursor-default`}
         >
           <div
-            className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+            className={`absolute inset-0 bg-gradient-to-br ${card.gradientClass} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
           />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
@@ -81,7 +80,7 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
                 {card.label}
               </span>
               <card.icon
-                className={`w-5 h-5 text-${card.color} transition-transform duration-300 group-hover:scale-110`}
+                className={`w-5 h-5 ${card.iconClass} transition-transform duration-300 group-hover:scale-110`}
               />
             </div>
             {loading ? (
@@ -90,14 +89,14 @@ export default function OverviewCards({ apps, loading }: OverviewCardsProps) {
               <motion.div
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
-                className={`text-3xl font-bold text-${card.color}`}
+                className={`text-3xl font-bold ${card.valueClass}`}
               >
                 {card.value}
               </motion.div>
             )}
           </div>
           <div
-            className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${card.color} to-transparent transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
+            className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.barClass} to-transparent transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
           />
         </motion.div>
       ))}

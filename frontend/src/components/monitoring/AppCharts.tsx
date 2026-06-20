@@ -105,11 +105,11 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
         </h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-accent-blue" />
+            <div className="w-3 h-3 rounded-full bg-accent-white" />
             <span className="text-text-secondary">CPU</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-accent-purple" />
+            <div className="w-3 h-3 rounded-full bg-accent-gray" />
             <span className="text-text-secondary">RAM</span>
           </div>
         </div>
@@ -119,24 +119,24 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
           <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <defs>
               <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#ffffff" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="ramGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                <stop offset="5%" stopColor="#888888" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#888888" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2a3a4d" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
             <XAxis
               dataKey="time"
-              stroke="#64748b"
+              stroke="#444"
               fontSize={11}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="#444"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -148,7 +148,7 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
             <Area
               type="monotone"
               dataKey="CPU"
-              stroke="#3b82f6"
+              stroke="#ffffff"
               strokeWidth={2}
               fill="url(#cpuGradient)"
               dot={false}
@@ -157,7 +157,7 @@ export default function AppCharts({ metrics, loading }: AppChartsProps) {
             <Area
               type="monotone"
               dataKey="RAM"
-              stroke="#8b5cf6"
+              stroke="#888888"
               strokeWidth={2}
               fill="url(#ramGradient)"
               dot={false}

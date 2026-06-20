@@ -24,23 +24,23 @@ export default function DeploymentCard({
   onViewLogs,
 }: DeploymentCardProps) {
   const statusColors: Record<string, string> = {
-    running: 'bg-green-500',
-    stopped: 'bg-gray-500',
-    building: 'bg-yellow-500',
-    deploying: 'bg-blue-500',
-    pending: 'bg-gray-400',
-    failed: 'bg-red-500',
-    blocked: 'bg-red-700',
+    running: 'bg-accent-white',
+    stopped: 'bg-accent-dark',
+    building: 'bg-accent-gray',
+    deploying: 'bg-accent-gray',
+    pending: 'bg-accent-dark',
+    failed: 'bg-accent-red',
+    blocked: 'bg-accent-red',
   };
 
   const statusTextColors: Record<string, string> = {
-    running: 'text-green-400',
-    stopped: 'text-gray-400',
-    building: 'text-yellow-400',
-    deploying: 'text-blue-400',
-    pending: 'text-gray-400',
-    failed: 'text-red-400',
-    blocked: 'text-red-600',
+    running: 'text-text-primary',
+    stopped: 'text-text-muted',
+    building: 'text-text-secondary',
+    deploying: 'text-text-secondary',
+    pending: 'text-text-muted',
+    failed: 'text-accent-red',
+    blocked: 'text-accent-red',
   };
 
   const formatDate = (dateStr: string) => {
@@ -53,16 +53,16 @@ export default function DeploymentCard({
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+    <div className="bg-bg-card rounded-lg p-4 border border-border">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-white">{deployment.app_name}</h3>
-          <p className="text-sm text-gray-400">
+          <h3 className="text-lg font-semibold text-text-primary">{deployment.app_name}</h3>
+          <p className="text-sm text-text-secondary">
             {deployment.repo_url.split('/').slice(-2).join('/')}
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-medium text-white ${statusColors[deployment.status] || 'bg-gray-500'}`}
+          className={`px-3 py-1 rounded-full text-xs font-medium text-white ${statusColors[deployment.status] || 'bg-accent-dark'}`}
         >
           {deployment.status.toUpperCase()}
         </span>
@@ -70,12 +70,12 @@ export default function DeploymentCard({
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-400">Branch:</span>
-          <span className="text-white">{deployment.branch}</span>
+          <span className="text-text-secondary">Branch:</span>
+          <span className="text-text-primary">{deployment.branch}</span>
         </div>
         {deployment.host_port && (
           <div className="flex justify-between">
-            <span className="text-gray-400">URL:</span>
+            <span className="text-text-secondary">URL:</span>
             <a
               href={safeUrl(deployment.container_url) || `http://localhost:${deployment.host_port}`}
               target="_blank"
@@ -88,26 +88,26 @@ export default function DeploymentCard({
         )}
         {deployment.image_tag && (
           <div className="flex justify-between">
-            <span className="text-gray-400">Image:</span>
-            <span className="text-gray-300 text-xs font-mono truncate max-w-[200px]">
+            <span className="text-text-secondary">Image:</span>
+            <span className="text-text-secondary text-xs font-mono truncate max-w-[200px]">
               {deployment.image_tag}
             </span>
           </div>
         )}
         <div className="flex justify-between">
-          <span className="text-gray-400">Created:</span>
-          <span className="text-gray-300">{formatDate(deployment.created_at)}</span>
+          <span className="text-text-secondary">Created:</span>
+          <span className="text-text-secondary">{formatDate(deployment.created_at)}</span>
         </div>
         {deployment.started_at && (
           <div className="flex justify-between">
-            <span className="text-gray-400">Started:</span>
-            <span className="text-gray-300">{formatDate(deployment.started_at)}</span>
+            <span className="text-text-secondary">Started:</span>
+            <span className="text-text-secondary">{formatDate(deployment.started_at)}</span>
           </div>
         )}
       </div>
 
       {deployment.error_message && (
-        <div className="mt-3 p-3 bg-red-900/50 rounded text-red-300 text-sm">
+        <div className="mt-3 p-3 bg-accent-red/10 border border-accent-red/30 rounded text-accent-red text-sm">
           <div className="font-semibold mb-1">
             {deployment.status === 'blocked' ? 'Blocked by Security Scanner' : 'Error'}
           </div>
@@ -119,7 +119,7 @@ export default function DeploymentCard({
         {deployment.status === 'running' && onStop && (
           <button
             onClick={() => onStop(deployment.id)}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition"
+            className="px-3 py-1.5 bg-transparent border border-accent-red text-accent-red hover:bg-accent-red/10 text-sm rounded transition"
           >
             Stop
           </button>
@@ -127,7 +127,7 @@ export default function DeploymentCard({
         {(deployment.status === 'stopped' || deployment.status === 'failed') && onStart && (
           <button
             onClick={() => onStart(deployment.id)}
-            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition"
+            className="px-3 py-1.5 bg-accent-white text-black hover:bg-accent-light text-sm rounded transition"
           >
             Start
           </button>
@@ -135,7 +135,7 @@ export default function DeploymentCard({
         {deployment.status === 'running' && onRestart && (
           <button
             onClick={() => onRestart(deployment.id)}
-            className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded transition"
+            className="px-3 py-1.5 bg-transparent border border-accent-gray text-accent-gray hover:bg-accent-gray/10 text-sm rounded transition"
           >
             Restart
           </button>
@@ -143,7 +143,7 @@ export default function DeploymentCard({
         {onViewLogs && (
           <button
             onClick={() => onViewLogs(deployment.id)}
-            className="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition"
+            className="px-3 py-1.5 bg-bg-hover hover:bg-border text-text-primary text-sm rounded transition"
           >
             Logs
           </button>
@@ -151,7 +151,7 @@ export default function DeploymentCard({
         {onDelete && (
           <button
             onClick={() => onDelete(deployment.id)}
-            className="px-3 py-1.5 bg-red-900 hover:bg-red-950 text-red-300 text-sm rounded transition"
+            className="px-3 py-1.5 bg-transparent border border-accent-red/50 text-accent-red hover:bg-accent-red/10 text-sm rounded transition"
           >
             Delete
           </button>

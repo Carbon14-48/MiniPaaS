@@ -28,21 +28,21 @@ export default function Dashboard() {
   const stoppedCount = deployments.filter(d => d.status === 'stopped').length;
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <div className="min-h-screen bg-bg-primary">
+      <nav className="bg-bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-xl font-bold text-white">MiniPaaS</Link>
+            <Link to="/dashboard" className="text-xl font-bold text-text-primary">MiniPaaS</Link>
             <div className="flex gap-4">
-              <Link to="/repos" className="text-gray-300 hover:text-white transition">Repositories</Link>
-              <Link to="/deployments" className="text-gray-300 hover:text-white transition">Deployments</Link>
-              <Link to="/monitoring" className="text-gray-300 hover:text-white transition">Monitoring</Link>
-              <Link to="/deploy/new" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium">+ New Deploy</Link>
+              <Link to="/repos" className="text-text-secondary hover:text-text-primary transition">Repositories</Link>
+              <Link to="/deployments" className="text-text-secondary hover:text-text-primary transition">Deployments</Link>
+              <Link to="/monitoring" className="text-text-secondary hover:text-text-primary transition">Monitoring</Link>
+              <Link to="/deploy/new" className="px-4 py-1 bg-accent-white text-black hover:bg-accent-light rounded-lg transition text-sm font-medium">+ New Deploy</Link>
             </div>
           </div>
           <button
             onClick={logout}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+            className="px-4 py-2 text-sm font-medium bg-transparent border border-accent-red/50 text-accent-red hover:bg-accent-red/10 rounded-md"
           >
             Logout
           </button>
@@ -50,69 +50,53 @@ export default function Dashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto py-6 px-4">
-        <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
-
-        {/* Monitoring Card - Prominent */}
-        <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-lg p-6 border border-purple-500 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">🔍 Monitoring</h2>
-              <p className="text-purple-200 text-sm mt-1">View CPU, RAM, logs and health of your deployed apps</p>
-            </div>
-            <Link
-              to="/monitoring"
-              className="px-6 py-3 bg-white text-purple-700 font-bold rounded-lg hover:bg-purple-100 transition shadow-lg"
-            >
-              Open Monitoring →
-            </Link>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold text-text-primary mb-6">Dashboard</h1>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="text-3xl font-bold text-white">{deployments.length}</div>
-            <div className="text-gray-400 text-sm">Total Deployments</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-3xl font-bold text-text-primary">{deployments.length}</div>
+            <div className="text-text-secondary text-sm">Total Deployments</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-green-700">
-            <div className="text-3xl font-bold text-green-400">{runningCount}</div>
-            <div className="text-gray-400 text-sm">Running</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-3xl font-bold text-text-primary">{runningCount}</div>
+            <div className="text-text-secondary text-sm">Running</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-yellow-700">
-            <div className="text-3xl font-bold text-yellow-400">{buildingCount}</div>
-            <div className="text-gray-400 text-sm">Building</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-3xl font-bold text-text-primary">{buildingCount}</div>
+            <div className="text-text-secondary text-sm">Building</div>
           </div>
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
-            <div className="text-3xl font-bold text-gray-400">{stoppedCount}</div>
-            <div className="text-gray-400 text-sm">Stopped</div>
+          <div className="bg-bg-card rounded-lg p-4 border border-border">
+            <div className="text-3xl font-bold text-text-primary">{stoppedCount}</div>
+            <div className="text-text-secondary text-sm">Stopped</div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+        <div className="bg-bg-card rounded-lg p-4 border border-border mb-6">
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Actions</h2>
           <div className="flex gap-4">
             <Link
               to="/repos"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+              className="px-4 py-2 bg-bg-hover hover:bg-border text-text-primary rounded-lg transition"
             >
               Browse Repositories
             </Link>
             <Link
               to="/monitoring"
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium"
+              className="px-4 py-2 bg-bg-hover hover:bg-border text-text-primary rounded-lg transition font-medium"
             >
-              🔍 Monitoring
+              Monitoring
             </Link>
             <Link
               to="/deployments"
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition"
+              className="px-4 py-2 bg-bg-hover hover:bg-border text-text-primary rounded-lg transition"
             >
               View Deployments
             </Link>
             <Link
               to="/deploy/new"
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+              className="px-4 py-2 bg-bg-hover hover:bg-border text-text-primary rounded-lg transition"
             >
               + New Deployment
             </Link>
@@ -120,53 +104,53 @@ export default function Dashboard() {
         </div>
 
         {user && (
-          <div className="bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
-            <div className="px-4 py-5 sm:px-6 border-b border-gray-700">
-              <h3 className="text-lg leading-6 font-medium text-white">User Information</h3>
+          <div className="bg-bg-card rounded-lg shadow overflow-hidden mb-6">
+            <div className="px-4 py-5 sm:px-6 border-b border-border">
+              <h3 className="text-lg leading-6 font-medium text-text-primary">User Information</h3>
             </div>
             <div className="px-4 py-5 sm:p-6">
               <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
                 <div className="sm:col-span-1">
-                  <dt className="text-sm font-medium text-gray-400">User ID</dt>
-                  <dd className="mt-1 text-sm text-white">{user.id}</dd>
+                  <dt className="text-sm font-medium text-text-secondary">User ID</dt>
+                  <dd className="mt-1 text-sm text-text-primary">{user.id}</dd>
                 </div>
                 <div className="sm:col-span-1">
-                  <dt className="text-sm font-medium text-gray-400">Email</dt>
-                  <dd className="mt-1 text-sm text-white">{user.email}</dd>
+                  <dt className="text-sm font-medium text-text-secondary">Email</dt>
+                  <dd className="mt-1 text-sm text-text-primary">{user.email}</dd>
                 </div>
                 <div className="sm:col-span-1">
-                  <dt className="text-sm font-medium text-gray-400">Name</dt>
-                  <dd className="mt-1 text-sm text-white">{user.name}</dd>
+                  <dt className="text-sm font-medium text-text-secondary">Name</dt>
+                  <dd className="mt-1 text-sm text-text-primary">{user.name}</dd>
                 </div>
                 <div className="sm:col-span-1">
-                  <dt className="text-sm font-medium text-gray-400">OAuth Provider</dt>
-                  <dd className="mt-1 text-sm text-white">{user.oauth_provider || 'Email/Password'}</dd>
+                  <dt className="text-sm font-medium text-text-secondary">OAuth Provider</dt>
+                  <dd className="mt-1 text-sm text-text-primary">{user.oauth_provider || 'Email/Password'}</dd>
                 </div>
               </dl>
             </div>
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-700">
-            <h3 className="text-lg leading-6 font-medium text-white">Tokens</h3>
+        <div className="bg-bg-card rounded-lg shadow overflow-hidden">
+          <div className="px-4 py-5 sm:px-6 border-b border-border">
+            <h3 className="text-lg leading-6 font-medium text-text-primary">Tokens</h3>
           </div>
           <div className="px-4 py-5 sm:p-6 space-y-4">
             <div>
-              <dt className="text-sm font-medium text-gray-400 mb-1">Access Token</dt>
-              <dd className="text-xs text-gray-500 break-all bg-gray-900 p-2 rounded">
+              <dt className="text-sm font-medium text-text-secondary mb-1">Access Token</dt>
+              <dd className="text-xs text-text-muted break-all bg-bg-input p-2 rounded">
                 {accessToken}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-400 mb-1">Refresh Token</dt>
-              <dd className="text-xs text-gray-500 break-all bg-gray-900 p-2 rounded">
+              <dt className="text-sm font-medium text-text-secondary mb-1">Refresh Token</dt>
+              <dd className="text-xs text-text-muted break-all bg-bg-input p-2 rounded">
                 {refreshToken}
               </dd>
             </div>
             <button
               onClick={refreshAccessToken}
-              className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium"
+              className="mt-4 px-4 py-2 bg-accent-white text-black hover:bg-accent-light rounded-md text-sm font-medium"
             >
               Refresh Access Token
             </button>

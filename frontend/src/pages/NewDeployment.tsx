@@ -99,15 +99,15 @@ export default function NewDeployment() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <div className="min-h-screen bg-bg-primary text-text-primary">
+      <nav className="bg-bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-xl font-bold text-white">MiniPaaS</Link>
+            <Link to="/dashboard" className="text-xl font-bold text-text-primary">MiniPaaS</Link>
             <div className="flex gap-4">
-              <Link to="/dashboard" className="text-gray-300 hover:text-white transition">Dashboard</Link>
-              <Link to="/deployments" className="text-gray-300 hover:text-white transition">Deployments</Link>
-              <Link to="/repos" className="text-white font-medium">New Deployment</Link>
+              <Link to="/dashboard" className="text-text-secondary hover:text-text-primary transition">Dashboard</Link>
+              <Link to="/deployments" className="text-text-secondary hover:text-text-primary transition">Deployments</Link>
+              <Link to="/repos" className="text-text-primary font-medium">New Deployment</Link>
             </div>
           </div>
         </div>
@@ -115,17 +115,17 @@ export default function NewDeployment() {
 
       <main className="max-w-2xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold mb-2">Create New Deployment</h1>
-        <p className="text-gray-400 mb-8">Deploy your application from GitHub</p>
+        <p className="text-text-secondary mb-8">Deploy your application from GitHub</p>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
+          <div className="mb-6 p-4 bg-accent-red/10 border border-accent-red/30 rounded-lg text-accent-red">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Repository URL
             </label>
             <input
@@ -133,13 +133,13 @@ export default function NewDeployment() {
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/username/repository"
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+              className="w-full px-4 py-2 bg-bg-input border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-white"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               App Name
             </label>
             <input
@@ -147,27 +147,27 @@ export default function NewDeployment() {
               value={appName}
               onChange={(e) => setAppName(e.target.value)}
               placeholder="my-awesome-app"
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+              className="w-full px-4 py-2 bg-bg-input border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-white"
               required
             />
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-text-muted">
               Only lowercase letters, numbers, and hyphens allowed
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Branch
             </label>
             {branchesLoading ? (
-              <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-400">
+              <div className="px-4 py-2 bg-bg-input border border-border rounded-lg text-text-secondary">
                 Loading branches...
               </div>
             ) : branches.length > 0 ? (
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-green-500"
+                className="w-full px-4 py-2 bg-bg-input border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-white"
               >
                 {branches.map((b) => (
                   <option key={b.name} value={b.name}>
@@ -181,7 +181,7 @@ export default function NewDeployment() {
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
                 placeholder="main"
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                className="w-full px-4 py-2 bg-bg-input border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-white"
                 required
               />
             )}
@@ -191,7 +191,7 @@ export default function NewDeployment() {
             <button
               type="submit"
               disabled={deploying}
-              className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition"
+              className="w-full px-4 py-3 bg-accent-white text-black hover:bg-accent-light disabled:bg-accent-dark disabled:text-text-muted disabled:cursor-not-allowed font-medium rounded-lg transition"
             >
               {deploying ? (
                 <span className="flex items-center justify-center gap-2">
