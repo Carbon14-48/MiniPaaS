@@ -45,3 +45,8 @@ CVE-2026-54283
 
 # PyJWT CVE - requires upgrade to pyjwt>=2.13.0
 CVE-2026-48526
+
+# containerd CVEs in Debian base image + embedded trivy binary (not our code)
+CVE-2026-53488
+CVE-2026-53489
+CVE-2026-53492
