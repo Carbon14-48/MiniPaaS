@@ -39,7 +39,6 @@ kubectl create secret generic minipaas-secret \
   --from-literal=POSTGRES_USER="${POSTGRES_USER:-minipaas}" \
   --from-literal=POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-minipaas}" \
   --from-literal=POSTGRES_DB="${POSTGRES_DB:-minipaas}" \
-  --from-literal=RABBITMQ_URL="${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}" \
   --dry-run=client -o yaml | \
   kubectl apply -f -
 

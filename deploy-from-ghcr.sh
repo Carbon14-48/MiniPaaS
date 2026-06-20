@@ -17,10 +17,7 @@ kubectl apply -f k8s/namespace.yaml
 echo "=== Applying remaining manifests ==="
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/secret.yaml
-kubectl apply -f k8s/pv.yaml 2>/dev/null || true
-kubectl apply -f k8s/pvc.yaml 2>/dev/null || true
 kubectl apply -f k8s/postgres/
-kubectl apply -f k8s/rabbitmq/
 kubectl apply -f k8s/auth-service/
 kubectl apply -f k8s/app-management/
 kubectl apply -f k8s/build-service/

@@ -9,8 +9,6 @@ class Settings(BaseSettings):
     KUBECONFIG_PATH: str = "/root/.kube/config"
     CLOUDOKU_DOMAIN: str = "cloudoku.app"
 
-    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
-
     class Config:
         extra = "ignore"
         env_file = ".env"

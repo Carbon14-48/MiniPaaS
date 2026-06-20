@@ -12,8 +12,6 @@ data:
   SECURITY_SCANNER_URL: "http://security-scanner:8000"
   DEPLOYER_SERVICE_URL: "http://deployer-service:8000"
   REGISTRY_SERVICE_URL: "http://registry-service:8005"
-  SCANNER_SERVICE_URL: "http://security-scanner:8000"
-
   LOG_LEVEL: "INFO"
   ENV: "development"
   ALLOWED_ORIGINS: '["*"]'
@@ -33,7 +31,6 @@ data:
   DEBUG: "true"
 
   BUILD_WORKDIR: "/tmp/builds"
-  MAX_BUILD_TIMEOUT: "300"
 
   DOCKER_SOCKET_PATH: "/var/run/docker.sock"
   TRIVY_PATH: "/usr/bin/trivy"

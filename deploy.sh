@@ -27,7 +27,6 @@ kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/ingress.yaml
 kubectl apply -f k8s/postgres/
 kubectl apply -f k8s/registry/
-kubectl apply -f k8s/rabbitmq/
 kubectl apply -f k8s/auth-service/
 kubectl apply -f k8s/app-management/
 kubectl apply -f k8s/build-service/

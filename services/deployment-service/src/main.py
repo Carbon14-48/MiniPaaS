@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.config import settings
-from src.routes import health, deployments
+from src.routes import health
 
 app = FastAPI(
     title="Cloudoku Deployment Service",
@@ -18,7 +18,6 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/health", tags=["health"])
-app.include_router(deployments.router, prefix="/deployments", tags=["deployments"])
 
 
 @app.get("/")
